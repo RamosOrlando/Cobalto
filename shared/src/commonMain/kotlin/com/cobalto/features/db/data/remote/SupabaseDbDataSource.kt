@@ -69,6 +69,12 @@ class SupabaseDbDataSource(
         Unit
     }
 
+    override suspend fun insertDbItem(dbItem: DbSubItem): Unit = withContext(Dispatchers.IO) {
+        supabaseClient.postgrest["DbItem"]
+            .upsert(dbItem)
+        Unit
+    }
+
     override fun observeDbs(): Flow<Unit> = callbackFlow {
         supabaseClient.auth.sessionStatus.first { it !is SessionStatus.Initializing }
         supabaseClient.realtime.connect()

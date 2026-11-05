@@ -42,6 +42,7 @@ fun DbItemsScreen(
     var itemsList by remember { mutableStateOf<List<DbSubItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedItem by remember { mutableStateOf<DbSubItem?>(null) }
+    var showCreateItemDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(db.dbId) {
         viewModel.syncItemsForDb(db.dbId)
@@ -177,6 +178,18 @@ fun DbItemsScreen(
                     )
                 )
             },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { showCreateItemDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Nuevo ítem"
+                    )
+                }
+            },
             modifier = modifier
         ) { paddingValues ->
             Column(
@@ -241,8 +254,97 @@ fun DbItemsScreen(
                     }
                 }
             }
+
+            if (showCreateItemDialog) {
+                CreateDbItemDialog(
+                    onDismiss = { showCreateItemDialog = false },
+                    onConfirm = { name, code, unit ->
+                        viewModel.addDbItem(
+                            dbId = db.dbId,
+                            name = name,
+                            code = code,
+                            unit = unit
+                        )
+                        showCreateItemDialog = false
+                    }
+                )
+            }
         }
     }
+}
+
+@Composable
+fun CreateDbItemDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, code: String?, unit: String) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var unit by remember { mutableStateOf("unid") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Crear Nuevo Ítem",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre del Ítem *") },
+                    placeholder = { Text("Ej: Excavación manual en terreno semiduro") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = IndustrialShapes.small
+                )
+
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it },
+                    label = { Text("Código (Opcional)") },
+                    placeholder = { Text("Ej: EXT-001") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = IndustrialShapes.small
+                )
+
+                OutlinedTextField(
+                    value = unit,
+                    onValueChange = { unit = it },
+                    label = { Text("Unidad de Medida *") },
+                    placeholder = { Text("Ej: m3, m2, unid") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = IndustrialShapes.small
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onConfirm(name.trim(), code.trim().ifBlank { null }, unit.trim())
+                    }
+                },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
 
 @Composable

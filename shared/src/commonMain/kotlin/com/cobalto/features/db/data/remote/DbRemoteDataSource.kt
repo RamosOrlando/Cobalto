@@ -12,4 +12,5 @@ interface DbRemoteDataSource {
     suspend fun getDbItemResources(itemId: String): List<DbItemResource>
     suspend fun insertDbItemResource(itemResource: DbItemResource)
     suspend fun deleteDbItemResource(itemId: String, resourceId: String)
+    suspend fun insertDbItem(dbItem: DbSubItem)
 }

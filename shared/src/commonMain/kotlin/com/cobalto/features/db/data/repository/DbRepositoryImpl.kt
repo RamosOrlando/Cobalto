@@ -85,4 +85,22 @@ class DbRepositoryImpl(
         }
         dbItemResourceDao.deleteDbItemResource(itemId, resourceId)
     }
+
+    override suspend fun addDbItem(dbId: String, name: String, code: String?, unit: String) {
+        val uniqueSuffix = (1000..9999).random()
+        val itemId = "${dbId}_item_${uniqueSuffix}"
+        val item = DbSubItem(
+            itemId = itemId,
+            dbId = dbId,
+            name = name,
+            code = if (code.isNull_orBlank()) "ITEM-${uniqueSuffix}" else code,
+            unit = if (unit.isNull_orBlank()) "unid" else unit
+        )
+        runCatching {
+            remoteDataSource.insertDbItem(item)
+        }
+        dbItemDao.insertItems(listOf(item.toEntity()))
+    }
 }
+
+private fun String?.isNull_orBlank(): Boolean = this == null || this.isBlank()

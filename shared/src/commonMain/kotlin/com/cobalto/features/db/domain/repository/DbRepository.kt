@@ -14,4 +14,5 @@ interface DbRepository {
     suspend fun syncDbItemResources(itemId: String)
     suspend fun addResourceToDbItem(itemId: String, resourceId: String, quantity: Double)
     suspend fun deleteResourceFromDbItem(itemId: String, resourceId: String)
+    suspend fun addDbItem(dbId: String, name: String, code: String?, unit: String)
 }

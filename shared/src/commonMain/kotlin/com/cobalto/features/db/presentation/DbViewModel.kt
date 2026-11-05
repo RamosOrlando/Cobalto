@@ -95,4 +95,10 @@ class DbViewModel(
             repository.deleteResourceFromDbItem(itemId, resourceId)
         }
     }
+
+    fun addDbItem(dbId: String, name: String, code: String?, unit: String) {
+        viewModelScope.launch {
+            repository.addDbItem(dbId, name, code, unit)
+        }
+    }
 }
