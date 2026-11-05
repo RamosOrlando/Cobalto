@@ -14,6 +14,8 @@ import com.cobalto.core.database.provider.ProviderDao
 import com.cobalto.features.provider.data.mapper.toDomain
 import com.cobalto.core.database.maker.MakerDao
 import com.cobalto.features.maker.data.mapper.toDomain
+import com.cobalto.features.maker.data.mapper.toEntity as toMakerEntity
+import com.cobalto.features.maker.data.remote.MakerRemoteDataSource
 import com.cobalto.features.maker.domain.model.Maker
 import com.cobalto.core.common.domain.model.Resource
 import kotlinx.coroutines.Dispatchers
@@ -31,12 +33,18 @@ class ResourceRepositoryImpl(
     private val providerDao: ProviderDao,
     private val priceHistoryDao: PriceHistoryDao,
     private val makerDao: MakerDao,
+    private val makerRemoteDataSource: MakerRemoteDataSource,
     private val remoteDataSource: ResourceRemoteDataSource
 ) : ResourceRepository {
 
     override suspend fun refreshResources(): ResultState<Unit> = withContext(Dispatchers.IO) {
         try {
             println("Starting refreshMaterials...")
+            runCatching {
+                val remoteMakers = makerRemoteDataSource.getMakers()
+                makerDao.insertMakers(remoteMakers.map { it.toMakerEntity() })
+            }
+
             val remoteMaterials = remoteDataSource.getResources()
             println("Fetched ${remoteMaterials.size} materials")
             resourceDao.insertResources(remoteMaterials.map { it.toEntity() })
@@ -70,10 +78,12 @@ class ResourceRepositoryImpl(
                     )
                 } ?: emptyList()
 
+                val resolvedMaker = makersById[resourceEntity.makerId]?.toDomain()
+                    ?: Maker(resourceEntity.makerId, resourceEntity.makerId)
+
                 ResourceWithPrices(
                     resource = resourceEntity.toDomain(),
-                    maker = makersById[resourceEntity.makerId]?.toDomain()
-                        ?: Maker(resourceEntity.makerId, "Desconocido"),
+                    maker = resolvedMaker,
                     prices = materialPrices
                 )
             }

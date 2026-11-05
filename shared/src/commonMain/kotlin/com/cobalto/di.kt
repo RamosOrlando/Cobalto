@@ -102,6 +102,7 @@ val dataModule = module {
             providerDao = get(),
             priceHistoryDao = get(),
             makerDao = get(),
+            makerRemoteDataSource = get(),
             remoteDataSource = get()
         )
     }

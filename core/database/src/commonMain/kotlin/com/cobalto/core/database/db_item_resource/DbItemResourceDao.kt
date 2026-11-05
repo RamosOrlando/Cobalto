@@ -11,13 +11,14 @@ data class DbItemResourceWithDetails(
     val name: String,
     val unit: String,
     val price: Double?,
-    val quantity: Double
+    val quantity: Double,
+    val sectionId: String? = null
 )
 
 @Dao
 interface DbItemResourceDao {
     @Query("""
-        SELECT dir.itemId, dir.resourceId, COALESCE(r.name, dir.resourceId) AS name, COALESCE(r.unit, 'unid') AS unit, r.price, dir.quantity
+        SELECT dir.itemId, dir.resourceId, COALESCE(r.name, dir.resourceId) AS name, COALESCE(r.unit, 'unid') AS unit, r.price, dir.quantity, r.sectionId
         FROM DbItemResource dir
         LEFT JOIN Resource r ON dir.resourceId = r.resourceId
         WHERE dir.itemId = :itemId

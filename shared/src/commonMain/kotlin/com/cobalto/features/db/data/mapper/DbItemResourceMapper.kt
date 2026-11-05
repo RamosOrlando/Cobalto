@@ -22,5 +22,6 @@ fun DbItemResourceWithDetails.toApuResourceItem() = ApuResourceItem(
     description = name,
     unit = unit,
     quantity = quantity,
-    unitPrice = price ?: 0.0
+    unitPrice = price ?: 0.0,
+    sectionId = sectionId
 )

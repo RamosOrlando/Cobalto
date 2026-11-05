@@ -63,7 +63,7 @@ interface ResourceDao {
                 ORDER BY SUBSTR(quoteDate,7,4) || SUBSTR(quoteDate,4,2) || SUBSTR(quoteDate,1,2) DESC 
                 LIMIT 1
             )
-        WHERE resourceId = :resourceId
+        WHERE resourceId = :resourceId AND EXISTS (SELECT 1 FROM PriceHistory WHERE resourceId = :resourceId)
     """)
     suspend fun updateResourceCurrentPriceFromHistory(resourceId: String)
 
@@ -88,6 +88,7 @@ interface ResourceDao {
                 ORDER BY SUBSTR(quoteDate,7,4) || SUBSTR(quoteDate,4,2) || SUBSTR(quoteDate,1,2) DESC 
                 LIMIT 1
             )
+        WHERE EXISTS (SELECT 1 FROM PriceHistory WHERE resourceId = Resource.resourceId)
     """)
     suspend fun syncAllResourcesCurrentPricesFromHistory()
 }

@@ -29,13 +29,16 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
 import com.cobalto.core.presentation.theme.*
 import com.cobalto.features.db.domain.model.DbItem
+import com.cobalto.features.resource.domain.repository.ResourceRepository
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun DbScreen(
     columns: Int? = null,
     modifier: Modifier = Modifier,
-    viewModel: DbViewModel = koinViewModel()
+    viewModel: DbViewModel = koinViewModel(),
+    resourceRepository: ResourceRepository = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -43,6 +46,8 @@ fun DbScreen(
 
     LaunchedEffect(Unit) {
         viewModel.onEvent(DbEvent.Refresh)
+        // Initial sync from Supabase to Room on entering Cobalto
+        resourceRepository.refreshResources()
     }
 
     if (selectedDb != null) {
@@ -91,6 +96,7 @@ fun DbScreenContent(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
     ) {
         // Header
         Column(
