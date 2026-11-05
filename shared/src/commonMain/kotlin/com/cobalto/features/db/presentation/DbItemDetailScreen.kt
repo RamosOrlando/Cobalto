@@ -1,8 +1,11 @@
 package com.cobalto.features.db.presentation
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,17 +18,21 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cobalto.core.common.domain.model.Resource
@@ -39,6 +46,7 @@ import com.cobalto.features.resource.domain.repository.ResourceRepository
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import kotlin.math.roundToInt
 
 data class ApuResourceItem(
     val code: String? = null,
@@ -112,123 +120,174 @@ fun DbItemDetailScreen(
         apuSections.sumOf { it.subtotal }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = item.name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "Código: ${item.code ?: "-"} | Unidad: ${item.unit}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
-            )
-        },
-        modifier = modifier
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(8.dp)
-        ) {
-            // Table Sheet Container
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = IndustrialShapes.small,
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outline,
-                        shape = IndustrialShapes.small
-                    )
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    // Header Row
-                    ApuTableHeaderRow()
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val isWideScreen = maxWidth >= 720.dp
 
-                    HorizontalDivider(thickness = 2.dp, color = Color.Black)
-
-                    // Render Each Section
-                    apuSections.forEach { section ->
-                        val filterType = when (section.title) {
-                            "MATERIALES" -> ResourceFilterType.MATERIALS
-                            "MANO DE OBRA" -> ResourceFilterType.LABOR
-                            "EQUIPO, MAQUINARIA Y HERRAMIENTAS" -> ResourceFilterType.EQUIPMENT
-                            else -> null
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(
+                                text = item.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "Código: ${item.code ?: "-"} | Unidad: ${item.unit}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                )
+            },
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Left Column: APU Table Container
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = IndustrialShapes.small,
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline,
+                                shape = IndustrialShapes.small
+                            )
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // Header Row
+                            ApuTableHeaderRow()
 
-                        ApuSectionBlock(
-                            section = section,
-                            onAddClick = if (filterType != null) {
-                                { activeFilterType = filterType }
-                            } else null,
-                            onQuantityChange = { resourceItem, newQty ->
-                                if (!resourceItem.code.isNull_orBlank()) {
-                                    viewModel.addResourceToDbItem(
-                                        itemId = item.itemId,
-                                        resourceId = resourceItem.code!!,
-                                        quantity = newQty
-                                    )
+                            HorizontalDivider(thickness = 2.dp, color = Color.Black)
+
+                            // Render Each Section
+                            apuSections.forEach { section ->
+                                val filterType = when (section.title) {
+                                    "MATERIALES" -> ResourceFilterType.MATERIALS
+                                    "MANO DE OBRA" -> ResourceFilterType.LABOR
+                                    "EQUIPO, MAQUINARIA Y HERRAMIENTAS" -> ResourceFilterType.EQUIPMENT
+                                    else -> null
                                 }
+
+                                ApuSectionBlock(
+                                    section = section,
+                                    onAddClick = if (filterType != null) {
+                                        { activeFilterType = filterType }
+                                    } else null,
+                                    onQuantityChange = { resourceItem, newQty ->
+                                        if (!resourceItem.code.isNull_orBlank()) {
+                                            viewModel.addResourceToDbItem(
+                                                itemId = item.itemId,
+                                                resourceId = resourceItem.code!!,
+                                                quantity = newQty
+                                            )
+                                        }
+                                    },
+                                    onDeleteResource = { resourceItem ->
+                                        if (!resourceItem.code.isNull_orBlank()) {
+                                            viewModel.deleteResourceFromDbItem(
+                                                itemId = item.itemId,
+                                                resourceId = resourceItem.code!!
+                                            )
+                                        }
+                                    }
+                                )
+                                HorizontalDivider(thickness = 1.5.dp, color = Color.Black)
+                            }
+
+                            // Total Summary Row
+                            ApuGrandTotalRow(grandTotal = grandTotal)
+                        }
+                    }
+                }
+
+                // Right Column for Desktop / Wide Screen: Side Panel
+                if (isWideScreen && activeFilterType != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        shape = IndustrialShapes.small,
+                        modifier = Modifier
+                            .width(380.dp)
+                            .fillMaxHeight()
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                                shape = IndustrialShapes.small
+                            )
+                            .padding(12.dp)
+                    ) {
+                        AddResourcePanelContent(
+                            filterType = activeFilterType!!,
+                            onDismiss = { activeFilterType = null },
+                            onResourceSelected = { resource ->
+                                viewModel.addResourceToDbItem(
+                                    itemId = item.itemId,
+                                    resourceId = resource.resourceId,
+                                    quantity = 1.0
+                                )
                             }
                         )
-                        HorizontalDivider(thickness = 1.5.dp, color = Color.Black)
                     }
-
-                    // Total Summary Row
-                    ApuGrandTotalRow(grandTotal = grandTotal)
                 }
             }
-        }
 
-        if (activeFilterType != null) {
-            AddResourceDialog(
-                filterType = activeFilterType!!,
-                onDismiss = { activeFilterType = null },
-                onResourceSelected = { resource ->
-                    viewModel.addResourceToDbItem(
-                        itemId = item.itemId,
-                        resourceId = resource.resourceId,
-                        quantity = 1.0
-                    )
-                }
-            )
+            // Modal Dialog for Mobile / Compact Screen
+            if (!isWideScreen && activeFilterType != null) {
+                AddResourceDialog(
+                    filterType = activeFilterType!!,
+                    onDismiss = { activeFilterType = null },
+                    onResourceSelected = { resource ->
+                        viewModel.addResourceToDbItem(
+                            itemId = item.itemId,
+                            resourceId = resource.resourceId,
+                            quantity = 1.0
+                        )
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun AddResourceDialog(
+fun AddResourcePanelContent(
     filterType: ResourceFilterType,
     onDismiss: () -> Unit,
     onResourceSelected: (Resource) -> Unit,
+    modifier: Modifier = Modifier,
     resourceRepository: ResourceRepository = koinInject(),
     makerRemoteDataSource: MakerRemoteDataSource = koinInject()
 ) {
@@ -251,7 +310,7 @@ fun AddResourceDialog(
         }
     }
 
-    val dialogTitle = when (filterType) {
+    val panelTitle = when (filterType) {
         ResourceFilterType.MATERIALS -> "Agregar Material"
         ResourceFilterType.LABOR -> "Agregar Mano de Obra"
         ResourceFilterType.EQUIPMENT -> "Agregar Equipo / Maquinaria"
@@ -296,160 +355,191 @@ fun AddResourceDialog(
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        // Panel Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Text(
-                text = dialogTitle,
+                text = panelTitle,
                 fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
-        },
-        text = {
-            Column(
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cerrar",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Search Field
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Buscar recurso, unidad o fabricante...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Limpiar")
+                    }
+                }
+            },
+            singleLine = true,
+            shape = IndustrialShapes.small
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // List
+        if (isLoading && filteredResources.isEmpty()) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 450.dp)
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
             ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Buscar recurso, unidad o fabricante...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Limpiar")
-                            }
-                        }
-                    },
-                    singleLine = true
+                CircularProgressIndicator()
+            }
+        } else if (filteredResources.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No hay recursos disponibles",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(filteredResources, key = { it.resource.resourceId }) { item ->
+                    val displayPrice = item.resource.price
+                        ?: item.prices.firstOrNull()?.priceHistory?.price
+                        ?: 0.0
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    val makerName = makersMap[item.resource.makerId]
+                        ?.takeIf { it.isNotBlank() }
+                        ?: item.maker.name.takeIf { it.isNotBlank() && it != "Desconocido" }
+                        ?: item.resource.makerId
 
-                if (isLoading && filteredResources.isEmpty()) {
-                    Box(
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                val selectedResource = item.resource.copy(price = displayPrice)
+                                onResourceSelected(selectedResource)
+                            }
                     ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (filteredResources.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No hay recursos disponibles",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(filteredResources, key = { it.resource.resourceId }) { item ->
-                            val displayPrice = item.resource.price
-                                ?: item.prices.firstOrNull()?.priceHistory?.price
-                                ?: 0.0
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = item.resource.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                            val makerName = makersMap[item.resource.makerId]
-                                ?.takeIf { it.isNotBlank() }
-                                ?: item.maker.name.takeIf { it.isNotBlank() && it != "Desconocido" }
-                                ?: item.resource.makerId
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                                    .clickable {
-                                        val selectedResource = item.resource.copy(price = displayPrice)
-                                        onResourceSelected(selectedResource)
-                                        onDismiss()
-                                    }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp)
+                                Row(
+                                    modifier = Modifier.weight(1f, fill = false),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Fila 1: Nombre del recurso completo en 1 sola linea de extremo a extremo
                                     Text(
-                                        text = item.resource.name,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.fillMaxWidth()
+                                        text = "Unid: ${item.resource.unit}",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1
                                     )
 
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    // Fila 2: Unidad + Maker (recortable) + Precio (prioridad)
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.weight(1f, fill = false),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "Unid: ${item.resource.unit}",
-                                                fontSize = 12.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 1
-                                            )
-
-                                            if (makerName.isNotBlank()) {
-                                                Text(
-                                                    text = "  •  ",
-                                                    fontSize = 12.sp,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Text(
-                                                    text = makerName,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    modifier = Modifier.weight(1f, fill = false)
-                                                )
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.width(8.dp))
-
+                                    if (makerName.isNotBlank()) {
                                         Text(
-                                            text = if (displayPrice > 0.0) "${formatNumber(displayPrice)} Bs." else "0.00 Bs.",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = if (displayPrice > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1
+                                            text = "  •  ",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = makerName,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false)
                                         )
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(
+                                    text = if (displayPrice > 0.0) "${formatNumber(displayPrice)} Bs." else "0.00 Bs.",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = if (displayPrice > 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
-            }
         }
+    }
+}
+
+@Composable
+fun AddResourceDialog(
+    filterType: ResourceFilterType,
+    onDismiss: () -> Unit,
+    onResourceSelected: (Resource) -> Unit,
+    resourceRepository: ResourceRepository = koinInject(),
+    makerRemoteDataSource: MakerRemoteDataSource = koinInject()
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            AddResourcePanelContent(
+                filterType = filterType,
+                onDismiss = onDismiss,
+                onResourceSelected = { resource ->
+                    onResourceSelected(resource)
+                    onDismiss()
+                },
+                modifier = Modifier.heightIn(max = 450.dp),
+                resourceRepository = resourceRepository,
+                makerRemoteDataSource = makerRemoteDataSource
+            )
+        },
+        confirmButton = {}
     )
 }
 
@@ -513,7 +603,8 @@ fun ApuTableHeaderRow() {
 fun ApuSectionBlock(
     section: ApuCategorySection,
     onAddClick: (() -> Unit)? = null,
-    onQuantityChange: ((ApuResourceItem, Double) -> Unit)? = null
+    onQuantityChange: ((ApuResourceItem, Double) -> Unit)? = null,
+    onDeleteResource: ((ApuResourceItem) -> Unit)? = null
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // Section Header Row (e.g., 1.- MATERIALES, 2.- MANO DE OBRA, 3.- EQUIPO)
@@ -555,89 +646,17 @@ fun ApuSectionBlock(
 
         HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
-        // Item Rows
+        // Item Rows with Swipe-to-Reveal Delete Action
         section.items.forEachIndexed { index, item ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp, horizontal = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Description
-                Text(
-                    text = item.description,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    lineHeight = 14.sp,
-                    modifier = Modifier
-                        .weight(2.6f)
-                        .padding(horizontal = 2.dp)
-                )
-
-                VerticalBorder()
-
-                // Unit
-                Text(
-                    text = item.unit,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(0.6f)
-                )
-
-                VerticalBorder()
-
-                // Editable Quantity TextField
-                Box(
-                    modifier = Modifier
-                        .weight(1.1f)
-                        .padding(horizontal = 2.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (onQuantityChange != null && !item.code.isNull_orBlank()) {
-                        QuantityTextField(
-                            quantity = item.quantity,
-                            onQuantityChange = { newQty ->
-                                onQuantityChange(item, newQty)
-                            }
-                        )
-                    } else {
-                        Text(
-                            text = formatNumber(item.quantity, decimals = 3),
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.End,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+            SwipeableApuItemRow(
+                item = item,
+                onDeleteClick = {
+                    if (onDeleteResource != null) {
+                        onDeleteResource(item)
                     }
-                }
-
-                VerticalBorder()
-
-                // Unit Price
-                Text(
-                    text = formatNumber(item.unitPrice),
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.End,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .weight(1.1f)
-                        .padding(end = 2.dp)
-                )
-
-                VerticalBorder()
-
-                // Total Cost
-                Text(
-                    text = formatNumber(item.totalPrice),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.End,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .weight(1.1f)
-                        .padding(end = 2.dp)
-                )
-            }
+                },
+                onQuantityChange = onQuantityChange
+            )
 
             if (index < section.items.lastIndex) {
                 HorizontalDivider(
@@ -645,6 +664,156 @@ fun ApuSectionBlock(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun SwipeableApuItemRow(
+    item: ApuResourceItem,
+    onDeleteClick: () -> Unit,
+    onQuantityChange: ((ApuResourceItem, Double) -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    var offsetX by remember { mutableStateOf(0f) }
+    val revealThresholdPx = 180f
+    val revealedOffsetPx = 180f
+
+    val animatedOffset by animateFloatAsState(
+        targetValue = offsetX,
+        animationSpec = spring()
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        // Red Delete Background Action on the Left
+        if (animatedOffset > 10f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(64.dp)
+                    .align(Alignment.CenterStart)
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .clickable {
+                        onDeleteClick()
+                        offsetX = 0f
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Borrar insumo",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        // Foreground Content Row (Swipes right to reveal the left delete action)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(animatedOffset.roundToInt(), 0) }
+                .background(MaterialTheme.colorScheme.surface)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            val newOffset = (offsetX + dragAmount).coerceIn(0f, revealedOffsetPx)
+                            offsetX = newOffset
+                        },
+                        onDragEnd = {
+                            offsetX = if (offsetX >= revealThresholdPx * 0.4f) {
+                                revealedOffsetPx
+                            } else {
+                                0f
+                            }
+                        },
+                        onDragCancel = {
+                            offsetX = 0f
+                        }
+                    )
+                }
+                .padding(vertical = 6.dp, horizontal = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Description
+            Text(
+                text = item.description,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = 14.sp,
+                modifier = Modifier
+                    .weight(2.6f)
+                    .padding(horizontal = 2.dp)
+            )
+
+            VerticalBorder()
+
+            // Unit
+            Text(
+                text = item.unit,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(0.6f)
+            )
+
+            VerticalBorder()
+
+            // Editable Quantity TextField
+            Box(
+                modifier = Modifier
+                    .weight(1.1f)
+                    .padding(horizontal = 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (onQuantityChange != null && !item.code.isNull_orBlank()) {
+                    QuantityTextField(
+                        quantity = item.quantity,
+                        onQuantityChange = { newQty ->
+                            onQuantityChange(item, newQty)
+                        }
+                    )
+                } else {
+                    Text(
+                        text = formatNumber(item.quantity, decimals = 3),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.End,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            VerticalBorder()
+
+            // Unit Price
+            Text(
+                text = formatNumber(item.unitPrice),
+                fontSize = 12.sp,
+                textAlign = TextAlign.End,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .weight(1.1f)
+                    .padding(end = 2.dp)
+            )
+
+            VerticalBorder()
+
+            // Total Cost
+            Text(
+                text = formatNumber(item.totalPrice),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .weight(1.1f)
+                    .padding(end = 2.dp)
+            )
         }
     }
 }

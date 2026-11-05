@@ -78,4 +78,11 @@ class DbRepositoryImpl(
         }
         dbItemResourceDao.insertDbItemResource(itemResource.toEntity())
     }
+
+    override suspend fun deleteResourceFromDbItem(itemId: String, resourceId: String) {
+        runCatching {
+            remoteDataSource.deleteDbItemResource(itemId, resourceId)
+        }
+        dbItemResourceDao.deleteDbItemResource(itemId, resourceId)
+    }
 }

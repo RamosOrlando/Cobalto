@@ -21,7 +21,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.template.cobalto"
+            packageName = "Cobalto"
             packageVersion = "1.0.0"
         }
     }

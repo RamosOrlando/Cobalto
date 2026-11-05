@@ -58,6 +58,17 @@ class SupabaseDbDataSource(
         Unit
     }
 
+    override suspend fun deleteDbItemResource(itemId: String, resourceId: String): Unit = withContext(Dispatchers.IO) {
+        supabaseClient.postgrest["DbItemResource"]
+            .delete {
+                filter {
+                    eq("itemId", itemId)
+                    eq("resourceId", resourceId)
+                }
+            }
+        Unit
+    }
+
     override fun observeDbs(): Flow<Unit> = callbackFlow {
         supabaseClient.auth.sessionStatus.first { it !is SessionStatus.Initializing }
         supabaseClient.realtime.connect()

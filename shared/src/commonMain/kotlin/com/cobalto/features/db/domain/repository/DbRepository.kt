@@ -13,4 +13,5 @@ interface DbRepository {
     fun getApuResourcesForDbItem(itemId: String): Flow<List<ApuResourceItem>>
     suspend fun syncDbItemResources(itemId: String)
     suspend fun addResourceToDbItem(itemId: String, resourceId: String, quantity: Double)
+    suspend fun deleteResourceFromDbItem(itemId: String, resourceId: String)
 }
