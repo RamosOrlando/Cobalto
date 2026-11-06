@@ -22,5 +22,7 @@ data class DbItemEntity(
     @ColumnInfo(name = "Code")
     val code: String? = null,
     @ColumnInfo(name = "imagePath")
-    val imagePath: String? = null
+    val imagePath: String? = null,
+    @ColumnInfo(name = "total")
+    val total: Double? = null
 )

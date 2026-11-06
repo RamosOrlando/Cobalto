@@ -2,6 +2,7 @@ package com.cobalto.features.db.data.repository
 
 import com.cobalto.core.database.db.DbDao
 import com.cobalto.core.database.db_item.DbItemDao
+import com.cobalto.core.database.db_item_resource.DbItemResourceCounts
 import com.cobalto.core.database.db_item_resource.DbItemResourceDao
 import com.cobalto.features.db.data.mapper.toApuResourceItem
 import com.cobalto.features.db.data.mapper.toDomain
@@ -47,6 +48,9 @@ class DbRepositoryImpl(
             dbItemDao.clearForDb(dbId)
             if (remoteItems.isNotEmpty()) {
                 dbItemDao.insertItems(remoteItems.map { it.toEntity() })
+                remoteItems.forEach { subItem ->
+                    runCatching { syncDbItemResources(subItem.itemId) }
+                }
             }
         }
     }
@@ -54,6 +58,12 @@ class DbRepositoryImpl(
     override fun getApuResourcesForDbItem(itemId: String): Flow<List<ApuResourceItem>> {
         return dbItemResourceDao.getResourcesForDbItem(itemId).map { list ->
             list.map { it.toApuResourceItem() }
+        }
+    }
+
+    override fun getResourceCountsMap(): Flow<Map<String, DbItemResourceCounts>> {
+        return dbItemResourceDao.getAllResourceCountsGroupedByItem().map { list ->
+            list.associateBy { it.itemId }
         }
     }
 
@@ -100,6 +110,13 @@ class DbRepositoryImpl(
             remoteDataSource.insertDbItem(item)
         }
         dbItemDao.insertItems(listOf(item.toEntity()))
+    }
+
+    override suspend fun updateDbItemTotal(itemId: String, total: Double) {
+        runCatching {
+            remoteDataSource.updateDbItemTotal(itemId, total)
+        }
+        dbItemDao.updateItemTotal(itemId, total)
     }
 }
 

@@ -10,5 +10,6 @@ data class DbSubItem(
     @SerialName("unit") val unit: String,
     @SerialName("dbId") val dbId: String,
     @SerialName("Code") val code: String? = null,
-    @SerialName("imagePath") val imagePath: String? = null
+    @SerialName("imagePath") val imagePath: String? = null,
+    @SerialName("total") val total: Double? = null
 )

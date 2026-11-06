@@ -20,6 +20,14 @@ import com.cobalto.features.db.data.remote.SupabaseDbDataSource
 import com.cobalto.features.db.data.repository.DbRepositoryImpl
 import com.cobalto.features.db.domain.repository.DbRepository
 import com.cobalto.features.db.presentation.DbViewModel
+import com.cobalto.features.decimal_format.data.remote.DecimalFormatRemoteDataSource
+import com.cobalto.features.decimal_format.data.remote.SupabaseDecimalFormatDataSource
+import com.cobalto.features.decimal_format.data.repository.DecimalFormatRepositoryImpl
+import com.cobalto.features.decimal_format.domain.repository.DecimalFormatRepository
+import com.cobalto.features.incidence_format.data.remote.IncidenceFormatRemoteDataSource
+import com.cobalto.features.incidence_format.data.remote.SupabaseIncidenceFormatDataSource
+import com.cobalto.features.incidence_format.data.repository.IncidenceFormatRepositoryImpl
+import com.cobalto.features.incidence_format.domain.repository.IncidenceFormatRepository
 import com.cobalto.features.section.data.remote.SectionRemoteDataSource
 import com.cobalto.features.section.data.remote.SupabaseSectionDataSource
 import com.cobalto.features.section.data.repository.SectionRepositoryImpl
@@ -80,6 +88,8 @@ val dataModule = module {
     single { get<AppDatabase>().dbDao() }
     single { get<AppDatabase>().dbItemDao() }
     single { get<AppDatabase>().dbItemResourceDao() }
+    single { get<AppDatabase>().decimalFormatDao() }
+    single { get<AppDatabase>().incidenceFormatDao() }
 
     factory<CategoryRemoteDataSource> { SupabaseCategoryDataSource(get()) }
     single<CategoryRepository> { CategoryRepositoryImpl(get(), get()) }
@@ -92,6 +102,12 @@ val dataModule = module {
 
     factory<MakerRemoteDataSource> { SupabaseMakerDataSource(get()) }
     single<MakerRepository> { MakerRepositoryImpl(get(), get()) }
+
+    factory<DecimalFormatRemoteDataSource> { SupabaseDecimalFormatDataSource(get()) }
+    single<DecimalFormatRepository> { DecimalFormatRepositoryImpl(get(), get()) }
+
+    factory<IncidenceFormatRemoteDataSource> { SupabaseIncidenceFormatDataSource(get()) }
+    single<IncidenceFormatRepository> { IncidenceFormatRepositoryImpl(get(), get()) }
 
     factory<ResourceRemoteDataSource> { SupabaseResourceDataSource(get()) }
     factory<PriceHistoryRemoteDataSource> { SupabasePriceHistoryDataSource(get()) }

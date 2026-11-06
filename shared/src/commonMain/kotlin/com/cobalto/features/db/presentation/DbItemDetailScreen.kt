@@ -2,6 +2,7 @@ package com.cobalto.features.db.presentation
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -118,6 +120,13 @@ fun DbItemDetailScreen(
 
     val grandTotal = remember(apuSections) {
         apuSections.sumOf { it.subtotal }
+    }
+
+    // Persist grandTotal directly into DbItem.total (Room & Supabase)
+    LaunchedEffect(grandTotal) {
+        if (grandTotal >= 0.0) {
+            viewModel.updateDbItemTotal(item.itemId, grandTotal)
+        }
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -616,17 +625,8 @@ fun ApuSectionBlock(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onAddClick != null) {
-                IconButton(
-                    onClick = onAddClick,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Agregar Insumo",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.width(2.dp))
+                ApuAddIconButton(onClick = onAddClick)
+                Spacer(modifier = Modifier.width(6.dp))
             }
 
             Text(
@@ -664,6 +664,37 @@ fun ApuSectionBlock(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun ApuAddIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shadowElevation = 2.dp,
+        tonalElevation = 2.dp,
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        ),
+        modifier = modifier.size(26.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Agregar Insumo",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -830,41 +861,40 @@ fun QuantityTextField(
         )
     }
 
-    BasicTextField(
-        value = textValue,
-        onValueChange = { newText ->
-            if (newText.isEmpty() || newText.matches(Regex("^\\d*\\.?\\d*$"))) {
-                textValue = newText
-                val parsed = newText.toDoubleOrNull()
-                if (parsed != null && parsed >= 0) {
-                    onQuantityChange(parsed)
+    Surface(
+        shape = IndustrialShapes.small,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+        border = BorderStroke(
+            width = 0.8.dp,
+            color = MaterialTheme.colorScheme.primary
+        ),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        BasicTextField(
+            value = textValue,
+            onValueChange = { newText ->
+                if (newText.isEmpty() || newText.matches(Regex("^\\d*\\.?\\d*$"))) {
+                    textValue = newText
+                    val parsed = newText.toDoubleOrNull()
+                    if (parsed != null && parsed >= 0) {
+                        onQuantityChange(parsed)
+                    }
                 }
-            }
-        },
-        singleLine = true,
-        textStyle = LocalTextStyle.current.copy(
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface
-        ),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Decimal,
-            imeAction = ImeAction.Done
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                shape = IndustrialShapes.small
-            )
-            .border(
-                width = 0.8.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = IndustrialShapes.small
-            )
-            .padding(horizontal = 2.dp, vertical = 3.dp)
-    )
+            },
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Done
+            ),
+            modifier = Modifier.padding(horizontal = 2.dp, vertical = 3.dp)
+        )
+    }
 }
 
 @Composable

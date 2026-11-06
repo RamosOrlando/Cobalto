@@ -75,6 +75,18 @@ class SupabaseDbDataSource(
         Unit
     }
 
+    override suspend fun updateDbItemTotal(itemId: String, total: Double): Unit = withContext(Dispatchers.IO) {
+        supabaseClient.postgrest["DbItem"]
+            .update({
+                set("total", total)
+            }) {
+                filter {
+                    eq("itemId", itemId)
+                }
+            }
+        Unit
+    }
+
     override fun observeDbs(): Flow<Unit> = callbackFlow {
         supabaseClient.auth.sessionStatus.first { it !is SessionStatus.Initializing }
         supabaseClient.realtime.connect()

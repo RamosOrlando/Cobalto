@@ -2,9 +2,12 @@ package com.cobalto.features.db.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cobalto.core.database.db_item_resource.DbItemResourceCounts
 import com.cobalto.features.db.domain.model.DbItem
 import com.cobalto.features.db.domain.model.DbSubItem
 import com.cobalto.features.db.domain.repository.DbRepository
+import com.cobalto.features.decimal_format.domain.model.DecimalFormat
+import com.cobalto.features.decimal_format.domain.repository.DecimalFormatRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,7 +29,8 @@ sealed interface DbEvent {
 }
 
 class DbViewModel(
-    private val repository: DbRepository
+    private val repository: DbRepository,
+    private val decimalFormatRepository: DecimalFormatRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -47,6 +51,20 @@ class DbViewModel(
             initialValue = DbUiState.Loading
         )
 
+    val resourceCountsMap: StateFlow<Map<String, DbItemResourceCounts>> = repository.getResourceCountsMap()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
+
+    val decimalFormats: StateFlow<List<DecimalFormat>> = decimalFormatRepository.getDecimalFormatsFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     init {
         refresh()
     }
@@ -61,6 +79,7 @@ class DbViewModel(
     private fun refresh() {
         viewModelScope.launch {
             repository.syncDbs()
+            decimalFormatRepository.refreshDecimalFormats()
         }
     }
 
@@ -99,6 +118,24 @@ class DbViewModel(
     fun addDbItem(dbId: String, name: String, code: String?, unit: String) {
         viewModelScope.launch {
             repository.addDbItem(dbId, name, code, unit)
+        }
+    }
+
+    fun updateDbItemTotal(itemId: String, total: Double) {
+        viewModelScope.launch {
+            repository.updateDbItemTotal(itemId, total)
+        }
+    }
+
+    fun refreshDecimalFormats() {
+        viewModelScope.launch {
+            decimalFormatRepository.refreshDecimalFormats()
+        }
+    }
+
+    fun saveDecimalFormatsLocally(formats: List<DecimalFormat>) {
+        viewModelScope.launch {
+            decimalFormatRepository.saveDecimalFormatsLocally(formats)
         }
     }
 }

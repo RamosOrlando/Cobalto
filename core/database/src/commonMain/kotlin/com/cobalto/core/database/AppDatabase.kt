@@ -11,6 +11,10 @@ import com.cobalto.core.database.db_item.DbItemDao
 import com.cobalto.core.database.db_item.DbItemEntity
 import com.cobalto.core.database.db_item_resource.DbItemResourceDao
 import com.cobalto.core.database.db_item_resource.DbItemResourceEntity
+import com.cobalto.core.database.decimal_format.DecimalFormatDao
+import com.cobalto.core.database.decimal_format.DecimalFormatEntity
+import com.cobalto.core.database.incidence_format.IncidenceFormatDao
+import com.cobalto.core.database.incidence_format.IncidenceFormatEntity
 import com.cobalto.core.database.section.SectionDao
 import com.cobalto.core.database.section.SectionEntity
 import com.cobalto.core.database.maker.MakerDao
@@ -28,9 +32,10 @@ import com.cobalto.core.database.user.*
 @Database(entities = [CategoryEntity::class, SectionEntity::class,
     MakerEntity::class, ResourceEntity::class, ProviderEntity::class,
     PriceHistoryEntity::class, ProfileEntity::class, DbEntity::class,
-    DbItemEntity::class, DbItemResourceEntity::class,
+    DbItemEntity::class, DbItemResourceEntity::class, DecimalFormatEntity::class,
+    IncidenceFormatEntity::class,
     UserEntity::class, UserRoleEntity::class, UserProfessionEntity::class,
-    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 25)
+    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 28)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
@@ -44,6 +49,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dbDao(): DbDao
     abstract fun dbItemDao(): DbItemDao
     abstract fun dbItemResourceDao(): DbItemResourceDao
+    abstract fun decimalFormatDao(): DecimalFormatDao
+    abstract fun incidenceFormatDao(): IncidenceFormatDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

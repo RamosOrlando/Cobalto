@@ -15,6 +15,13 @@ data class DbItemResourceWithDetails(
     val sectionId: String? = null
 )
 
+data class DbItemResourceCounts(
+    val itemId: String,
+    val materialsCount: Int = 0,
+    val laborCount: Int = 0,
+    val equipmentCount: Int = 0
+)
+
 @Dao
 interface DbItemResourceDao {
     @Query("""
@@ -24,6 +31,18 @@ interface DbItemResourceDao {
         WHERE dir.itemId = :itemId
     """)
     fun getResourcesForDbItem(itemId: String): Flow<List<DbItemResourceWithDetails>>
+
+    @Query("""
+        SELECT 
+            dir.itemId AS itemId,
+            COALESCE(SUM(CASE WHEN r.sectionId IS NULL OR (r.sectionId != 'Labor-Labor' AND r.sectionId != 'Equipment-Equipment') THEN 1 ELSE 0 END), 0) AS materialsCount,
+            COALESCE(SUM(CASE WHEN r.sectionId = 'Labor-Labor' THEN 1 ELSE 0 END), 0) AS laborCount,
+            COALESCE(SUM(CASE WHEN r.sectionId = 'Equipment-Equipment' THEN 1 ELSE 0 END), 0) AS equipmentCount
+        FROM DbItemResource dir
+        LEFT JOIN Resource r ON dir.resourceId = r.resourceId
+        GROUP BY dir.itemId
+    """)
+    fun getAllResourceCountsGroupedByItem(): Flow<List<DbItemResourceCounts>>
 
     @Upsert
     suspend fun insertDbItemResources(itemResources: List<DbItemResourceEntity>)

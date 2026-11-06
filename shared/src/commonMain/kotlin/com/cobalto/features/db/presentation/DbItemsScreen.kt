@@ -1,13 +1,17 @@
 package com.cobalto.features.db.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -21,13 +25,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
+import com.cobalto.core.database.db_item_resource.DbItemResourceCounts
 import com.cobalto.core.presentation.theme.*
 import com.cobalto.features.db.domain.model.DbItem
 import com.cobalto.features.db.domain.model.DbSubItem
+import com.cobalto.features.decimal_format.domain.model.DecimalFormat
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +51,10 @@ fun DbItemsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var selectedItem by remember { mutableStateOf<DbSubItem?>(null) }
     var showCreateItemDialog by remember { mutableStateOf(false) }
+    var showDecimalFormatDialog by remember { mutableStateOf(false) }
+
+    val resourceCountsMap by viewModel.resourceCountsMap.collectAsState()
+    val decimalFormats by viewModel.decimalFormats.collectAsState()
 
     LaunchedEffect(db.dbId) {
         viewModel.syncItemsForDb(db.dbId)
@@ -168,6 +180,7 @@ fun DbItemsScreen(
                                     },
                                     onClick = {
                                         showSettingsMenu = false
+                                        showDecimalFormatDialog = true
                                     }
                                 )
                             }
@@ -241,6 +254,7 @@ fun DbItemsScreen(
                         itemsIndexed(filteredItems, key = { _, item -> item.itemId }) { index, item ->
                             WhatsAppDbItemRow(
                                 item = item,
+                                counts = resourceCountsMap[item.itemId],
                                 onClick = { selectedItem = item }
                             )
                             if (index < filteredItems.lastIndex) {
@@ -268,6 +282,304 @@ fun DbItemsScreen(
                         showCreateItemDialog = false
                     }
                 )
+            }
+
+            if (showDecimalFormatDialog) {
+                DecimalFormatDialog(
+                    initialFormats = decimalFormats,
+                    onDismiss = { showDecimalFormatDialog = false },
+                    onSave = { updatedList ->
+                        viewModel.saveDecimalFormatsLocally(updatedList)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DecimalFormatDialog(
+    initialFormats: List<DecimalFormat>,
+    onDismiss: () -> Unit,
+    onSave: (List<DecimalFormat>) -> Unit
+) {
+    val baseFormats = remember(initialFormats) {
+        if (initialFormats.isNotEmpty()) {
+            initialFormats
+        } else {
+            listOf(
+                DecimalFormat(decimalId = "df_1", codigo = "PU_PRICE", name = "Precio Unitario Insumo", number = 2),
+                DecimalFormat(decimalId = "df_2", codigo = "PU_QTY", name = "Cantidad Insumo", number = 2),
+                DecimalFormat(decimalId = "df_3", codigo = "PU_TOTAL", name = "Costo Parcial APU", number = 2),
+                DecimalFormat(decimalId = "df_4", codigo = "PRES_PRICE", name = "Precio Unitario Rubro", number = 2),
+                DecimalFormat(decimalId = "df_5", codigo = "PRES_QTY", name = "Cantidad Rubro", number = 2),
+                DecimalFormat(decimalId = "df_6", codigo = "PRES_TOTAL", name = "Monto Total Presupuesto", number = 2)
+            )
+        }
+    }
+
+    val editedNumbers = remember(baseFormats) {
+        mutableStateMapOf<String, String>().apply {
+            baseFormats.forEach { format ->
+                val num = if (format.number in 1..5) format.number else 2
+                put(format.decimalId, num.toString())
+            }
+        }
+    }
+
+    val puFormats = remember(baseFormats) {
+        baseFormats.filter { it.codigo.uppercase().startsWith("PU") }
+    }
+    val budgetFormats = remember(baseFormats) {
+        baseFormats.filter { !it.codigo.uppercase().startsWith("PU") }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Número de decimales",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Section 1: Precios Unitarios
+                if (puFormats.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Precios Unitarios",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+
+                        puFormats.forEach { format ->
+                            DecimalFormatRow(
+                                format = format,
+                                textValue = editedNumbers[format.decimalId] ?: "2",
+                                onValueChange = { newText ->
+                                    editedNumbers[format.decimalId] = newText
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Section 2: Presupuesto
+                if (budgetFormats.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Presupuesto",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+
+                        budgetFormats.forEach { format ->
+                            DecimalFormatRow(
+                                format = format,
+                                textValue = editedNumbers[format.decimalId] ?: "2",
+                                onValueChange = { newText ->
+                                    editedNumbers[format.decimalId] = newText
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val updatedList = baseFormats.map { format ->
+                        val text = editedNumbers[format.decimalId]
+                        val parsed = text?.toIntOrNull()
+                        val validNum = if (parsed != null && parsed in 1..5) parsed else 2
+                        format.copy(number = validNum)
+                    }
+                    onSave(updatedList)
+                    onDismiss()
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+fun DecimalFormatRow(
+    format: DecimalFormat,
+    textValue: String,
+    onValueChange: (String) -> Unit
+) {
+    val currentNum = textValue.toIntOrNull() ?: 2
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                text = format.name,
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Código: ${format.codigo}",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        DecimalStepperField(
+            value = textValue,
+            onValueChange = onValueChange,
+            onIncrement = {
+                val next = (currentNum + 1).coerceAtMost(5)
+                onValueChange(next.toString())
+            },
+            onDecrement = {
+                val prev = (currentNum - 1).coerceAtLeast(1)
+                onValueChange(prev.toString())
+            },
+            enabledUp = currentNum < 5,
+            enabledDown = currentNum > 1
+        )
+    }
+}
+
+@Composable
+fun DecimalStepperField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+    enabledUp: Boolean,
+    enabledDown: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = IndustrialShapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp,
+        shadowElevation = 1.dp,
+        modifier = modifier
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                shape = IndustrialShapes.small
+            )
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.height(44.dp)
+        ) {
+            // Number Input Field
+            BasicTextField(
+                value = value,
+                onValueChange = { input ->
+                    val digit = input.filter { it.isDigit() }
+                    if (digit.isEmpty()) {
+                        onValueChange("")
+                    } else {
+                        val num = digit.takeLast(1).toIntOrNull() ?: 2
+                        val clamped = num.coerceIn(1, 5)
+                        onValueChange(clamped.toString())
+                    }
+                },
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier
+                    .width(40.dp)
+                    .padding(horizontal = 2.dp)
+            )
+
+            // Vertical Separator Line
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            )
+
+            // Up / Down Stepper Buttons Column
+            Column(
+                modifier = Modifier
+                    .width(30.dp)
+                    .fillMaxHeight()
+            ) {
+                // Up Arrow
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(
+                            if (enabledUp) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent
+                        )
+                        .clickable(enabled = enabledUp, onClick = onIncrement),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Incrementar",
+                        tint = if (enabledUp) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                // Horizontal Separator Line
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                )
+
+                // Down Arrow
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(
+                            if (enabledDown) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent
+                        )
+                        .clickable(enabled = enabledDown, onClick = onDecrement),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Decrementar",
+                        tint = if (enabledDown) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -350,6 +662,7 @@ fun CreateDbItemDialog(
 @Composable
 fun WhatsAppDbItemRow(
     item: DbSubItem,
+    counts: DbItemResourceCounts?,
     onClick: () -> Unit
 ) {
     Row(
@@ -398,56 +711,122 @@ fun WhatsAppDbItemRow(
         Column(
             modifier = Modifier.weight(1f)
         ) {
+            // Fila 1: Nombre del Ítem solo de extremo a extremo
+            Text(
+                text = item.name,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Fila 2: Izquierda = Código + Unidad + Iconos y Cantidades | Derecha = Costo Total en Bs.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.name,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                // Lado Izquierdo: Código Chip + Unidad + Iconos de Recursos y Cantidades
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f, fill = false)
-                )
+                ) {
+                    if (!item.code.isNull_orEmpty()) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = CircleShape
+                        ) {
+                            Text(
+                                text = item.code ?: "",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
 
-                if (!item.code.isNull_orEmpty()) {
+                    Text(
+                        text = "Unid: ${item.unit}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = CircleShape
+
+                    // Iconos y cantidades de recursos seguidos directamente de la unidad
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = item.code ?: "",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
+                        // 1. Materiales (Regla)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Straighten,
+                                contentDescription = "Materiales",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = "${counts?.materialsCount ?: 0}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // 2. Mano de Obra (Persona)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Mano de Obra",
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = "${counts?.laborCount ?: 0}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // 3. Maquinaria / Equipo (Maquinaria)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.PrecisionManufacturing,
+                                contentDescription = "Maquinaria",
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = "${counts?.equipmentCount ?: 0}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Straighten,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
+                // Lado Derecho de la Fila 2: Costo Total en Bs.
                 Text(
-                    text = "Unidad: ${item.unit}",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    text = "${formatNumber(item.total ?: 0.0)} Bs.",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -499,6 +878,15 @@ fun DbItemSearchBar(
             unfocusedContainerColor = MaterialTheme.colorScheme.surface
         )
     )
+}
+
+private fun formatNumber(value: Double, decimals: Int = 2): String {
+    val factor = when (decimals) {
+        3 -> 1000.0
+        else -> 100.0
+    }
+    val rounded = (value * factor).toInt() / factor
+    return rounded.toString()
 }
 
 private fun String?.isNull_orEmpty(): Boolean = this == null || this.trim().isEmpty()

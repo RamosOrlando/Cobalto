@@ -9,7 +9,8 @@ fun DbItemEntity.toDomain() = DbSubItem(
     unit = unit,
     dbId = dbId,
     code = code,
-    imagePath = imagePath
+    imagePath = imagePath,
+    total = total
 )
 
 fun DbSubItem.toEntity() = DbItemEntity(
@@ -18,5 +19,6 @@ fun DbSubItem.toEntity() = DbItemEntity(
     unit = unit,
     dbId = dbId,
     code = code,
-    imagePath = imagePath
+    imagePath = imagePath,
+    total = total
 )
