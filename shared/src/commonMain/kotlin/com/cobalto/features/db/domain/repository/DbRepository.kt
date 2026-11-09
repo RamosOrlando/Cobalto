@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface DbRepository {
     fun getDbs(): Flow<List<DbItem>>
+    fun getItemCountsMap(): Flow<Map<String, Int>>
     suspend fun syncDbs()
     fun getDbItems(dbId: String): Flow<List<DbSubItem>>
     suspend fun syncDbItems(dbId: String)

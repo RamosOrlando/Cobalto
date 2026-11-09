@@ -7,9 +7,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -42,6 +44,7 @@ fun DbScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val dbItemCountMap by viewModel.dbItemCountMap.collectAsState()
     var selectedDb by remember { mutableStateOf<DbItem?>(null) }
 
     LaunchedEffect(Unit) {
@@ -61,6 +64,7 @@ fun DbScreen(
         DbScreenContent(
             uiState = uiState,
             searchQuery = searchQuery,
+            dbItemCountMap = dbItemCountMap,
             onEvent = { viewModel.onEvent(it) },
             onDbClick = { dbId ->
                 if (uiState is DbUiState.Success) {
@@ -77,6 +81,7 @@ fun DbScreen(
 fun DbScreenContent(
     uiState: DbUiState,
     searchQuery: String,
+    dbItemCountMap: Map<String, Int> = emptyMap(),
     onEvent: (DbEvent) -> Unit,
     onDbClick: (String) -> Unit = {},
     columns: Int? = null,
@@ -92,45 +97,12 @@ fun DbScreenContent(
         }
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .padding(top = 8.dp)
     ) {
-        // Header
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Text(
-                text = "Bases de Datos",
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 28.sp,
-                    letterSpacing = (-0.5).sp
-                )
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Listado de bases de datos sincronizadas desde Supabase y Room.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-                lineHeight = 20.sp
-            )
-        }
-
-        // Search Bar
-        DbSearchBarSection(
-            query = searchQuery,
-            onQueryChange = { onEvent(DbEvent.OnSearchQueryChanged(it)) }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Content
-        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             when (val state = uiState) {
                 is DbUiState.Loading -> {
                     Box(
@@ -180,6 +152,7 @@ fun DbScreenContent(
                             items(state.dbs, key = { it.dbId }) { item ->
                                 DbCard(
                                     dbItem = item,
+                                    itemCount = dbItemCountMap[item.dbId] ?: 0,
                                     onDbClick = onDbClick
                                 )
                             }
@@ -233,7 +206,6 @@ fun DbScreenContent(
                     }
                 }
             }
-        }
     }
 }
 
@@ -293,6 +265,7 @@ fun DbSearchBarSection(
 @Composable
 fun DbCard(
     dbItem: DbItem,
+    itemCount: Int = 0,
     onDbClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -378,6 +351,34 @@ fun DbCard(
                 )
         )
 
+        // Top Right Count Badge
+        Surface(
+            color = Color.Black.copy(alpha = 0.55f),
+            shape = CircleShape,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.List,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = "$itemCount elementos",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                )
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -396,11 +397,23 @@ fun DbCard(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "ID: ${dbItem.dbId}",
-                color = Color.White.copy(alpha = 0.8f),
-                style = MaterialTheme.typography.bodySmall
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "ID: ${dbItem.dbId}",
+                    color = Color.White.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "$itemCount elementos",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }

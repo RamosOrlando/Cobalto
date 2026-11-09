@@ -28,10 +28,15 @@ import com.cobalto.core.presentation.navigation.components.CatalogDetailPlacehol
 import com.cobalto.core.presentation.navigation.components.PlaceholderScreen
 import com.cobalto.core.presentation.theme.IndustrialTheme
 import com.cobalto.features.auth.domain.model.UserRole
+import androidx.compose.foundation.text.BasicTextField
 import com.cobalto.features.category.presentation.CategoryScreen
+import com.cobalto.features.db.presentation.DbEvent
 import com.cobalto.features.db.presentation.DbScreen
+import com.cobalto.features.db.presentation.DbViewModel
 import com.cobalto.features.maker.presentation.MakerScreen
 import com.cobalto.features.price_history.presentation.PriceHistoryScreen
+import com.cobalto.features.presupuesto.presentation.BudgetScreen
+import com.cobalto.features.presupuesto.presentation.BudgetViewModel
 import com.cobalto.features.profile.presentation.ProfileScreen
 import com.cobalto.features.provider.presentation.ProviderScreen
 import com.cobalto.features.resource.presentation.PrintPreviewScreen
@@ -175,65 +180,146 @@ fun MainScreenContent(
                         )
                     },
                     actions = {
-                        var showMenu by remember { mutableStateOf(false) }
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Opciones",
-                                tint = MaterialTheme.colorScheme.onSurface
+                        if (currentScreen is Screen.Db) {
+                            val dbViewModel: DbViewModel = koinViewModel()
+                            val searchQuery by dbViewModel.searchQuery.collectAsState()
+
+                            DbTopAppBarSearch(
+                                query = searchQuery,
+                                onQueryChange = { dbViewModel.onEvent(DbEvent.OnSearchQueryChanged(it)) }
                             )
                         }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = "Modo Cotización",
-                                        color = if (quoteModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = {
-                                    onToggleQuoteMode()
-                                },
-                                leadingIcon = {
+
+                        if (currentScreen is Screen.Presupuesto) {
+                            val budgetViewModel: BudgetViewModel = koinViewModel()
+                            var showPresupuestoMenu by remember { mutableStateOf(false) }
+
+                            Box {
+                                IconButton(onClick = { showPresupuestoMenu = true }) {
                                     Icon(
-                                        imageVector = if (quoteModeEnabled) Icons.Default.ShoppingCart else Icons.Default.ShoppingCartCheckout,
-                                        contentDescription = null,
-                                        tint = if (quoteModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                trailingIcon = {
-                                    Switch(
-                                        checked = quoteModeEnabled,
-                                        onCheckedChange = { onToggleQuoteMode() },
-                                        modifier = Modifier.scale(0.7f),
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                                        )
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = "Opciones de Presupuesto",
+                                        tint = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-                            )
 
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                DropdownMenu(
+                                    expanded = showPresupuestoMenu,
+                                    onDismissRequest = { showPresupuestoMenu = false },
+                                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Crear proyecto nuevo",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.AddCircleOutline,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        onClick = {
+                                            showPresupuestoMenu = false
+                                            budgetViewModel.onShowCreateDialog()
+                                        }
+                                    )
 
-                            DropdownMenuItem(
-                                text = { Text("Cerrar Sesión") },
-                                onClick = {
-                                    showMenu = false
-                                    onLogout()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                                        contentDescription = null,
-                                        tint = Color.Red
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Recuperar proyecto",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.FolderOpen,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        onClick = {
+                                            showPresupuestoMenu = false
+                                        }
+                                    )
+
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Configurar parámetros",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Calculate,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        onClick = {
+                                            showPresupuestoMenu = false
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Configurar decimales",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Tune,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        onClick = {
+                                            showPresupuestoMenu = false
+                                        }
+                                    )
+
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Imprimir reportes",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Print,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        onClick = {
+                                            showPresupuestoMenu = false
+                                        }
                                     )
                                 }
-                            )
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -383,7 +469,7 @@ fun MainScreenContent(
                                     }
                                 )
                                 Screen.Db -> DbScreen()
-                                Screen.Presupuesto -> PlaceholderScreen("Presupuesto", Icons.AutoMirrored.Filled.ReceiptLong)
+                                Screen.Presupuesto -> BudgetScreen()
                                 Screen.Configuracion -> PlaceholderScreen("Configuración", Icons.Default.Settings)
                                 else -> {
                                     Spacer(Modifier.size(0.dp))
@@ -492,6 +578,70 @@ private data class NavigationItem(
     val icon: ImageVector,
     val screen: Screen
 )
+
+@Composable
+private fun DbTopAppBarSearch(
+    query: String,
+    onQueryChange: (String) -> Unit
+) {
+    BasicTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier
+            .widthIn(min = 150.dp, max = 220.dp)
+            .height(36.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = com.cobalto.core.presentation.theme.IndustrialShapes.small
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = com.cobalto.core.presentation.theme.IndustrialShapes.small
+            )
+            .padding(horizontal = 8.dp),
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            color = MaterialTheme.colorScheme.onSurface
+        ),
+        decorationBox = { innerTextField ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Buscar BD",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Box(modifier = Modifier.weight(1f)) {
+                    if (query.isEmpty()) {
+                        Text(
+                            text = "Buscar BD...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                    innerTextField()
+                }
+                if (query.isNotEmpty()) {
+                    IconButton(
+                        onClick = { onQueryChange("") },
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Limpiar",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+    )
+}
 
 private fun isNavItemSelected(currentScreen: Screen, targetScreen: Screen): Boolean {
     return when (targetScreen) {

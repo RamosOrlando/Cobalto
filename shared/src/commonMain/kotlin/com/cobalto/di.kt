@@ -20,6 +20,9 @@ import com.cobalto.features.db.data.remote.SupabaseDbDataSource
 import com.cobalto.features.db.data.repository.DbRepositoryImpl
 import com.cobalto.features.db.domain.repository.DbRepository
 import com.cobalto.features.db.presentation.DbViewModel
+import com.cobalto.features.presupuesto.data.repository.ProjectRepositoryImpl
+import com.cobalto.features.presupuesto.domain.repository.ProjectRepository
+import com.cobalto.features.presupuesto.presentation.BudgetViewModel
 import com.cobalto.features.decimal_format.data.remote.DecimalFormatRemoteDataSource
 import com.cobalto.features.decimal_format.data.remote.SupabaseDecimalFormatDataSource
 import com.cobalto.features.decimal_format.data.repository.DecimalFormatRepositoryImpl
@@ -90,6 +93,9 @@ val dataModule = module {
     single { get<AppDatabase>().dbItemResourceDao() }
     single { get<AppDatabase>().decimalFormatDao() }
     single { get<AppDatabase>().incidenceFormatDao() }
+    single { get<AppDatabase>().projectDao() }
+    single { get<AppDatabase>().projectModuleDao() }
+    single { get<AppDatabase>().projectItemDao() }
 
     factory<CategoryRemoteDataSource> { SupabaseCategoryDataSource(get()) }
     single<CategoryRepository> { CategoryRepositoryImpl(get(), get()) }
@@ -130,6 +136,8 @@ val dataModule = module {
     factory<UserRemoteDataSource> { SupabaseUserDataSource(get()) }
     single<UserRepository> { UserRepositoryImpl(get(), get()) }
 
+    single<ProjectRepository> { ProjectRepositoryImpl(get(), get(), get()) }
+
     single<SyncRepository> { SyncRepositoryImpl(get(), get(), get(), get(), get(), get(), get()) }
 
     single { RealtimeSyncManager(get(), get(), get(), get(), get(), get(), get()) }
@@ -150,6 +158,7 @@ val domainModule = module {
 val viewModelModule = module {
     viewModelOf(::CategoryViewModel)
     viewModelOf(::DbViewModel)
+    viewModelOf(::BudgetViewModel)
     viewModelOf(::SectionViewModel)
     viewModelOf(::MakerViewModel)
     viewModelOf(::ResourceViewModel)

@@ -63,6 +63,13 @@ class DbViewModel(
             initialValue = emptyMap()
         )
 
+    val dbItemCountMap: StateFlow<Map<String, Int>> = repository.getItemCountsMap()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
+
     val decimalFormats: StateFlow<List<DecimalFormat>> = decimalFormatRepository.getDecimalFormatsFlow()
         .stateIn(
             scope = viewModelScope,

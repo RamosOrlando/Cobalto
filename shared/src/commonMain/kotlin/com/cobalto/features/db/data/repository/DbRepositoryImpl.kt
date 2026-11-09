@@ -29,6 +29,12 @@ class DbRepositoryImpl(
         }
     }
 
+    override fun getItemCountsMap(): Flow<Map<String, Int>> {
+        return dbItemDao.getItemCountsGroupedByDb().map { list ->
+            list.associate { it.dbId to it.count }
+        }
+    }
+
     override suspend fun syncDbs() {
         runCatching {
             val remoteDbs = remoteDataSource.getDbs()

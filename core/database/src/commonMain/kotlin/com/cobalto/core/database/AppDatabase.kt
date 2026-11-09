@@ -27,15 +27,22 @@ import com.cobalto.core.database.provider.ProviderDao
 import com.cobalto.core.database.provider.ProviderEntity
 import com.cobalto.core.database.auth.ProfileDao
 import com.cobalto.core.database.auth.ProfileEntity
+import com.cobalto.core.database.project.ProjectDao
+import com.cobalto.core.database.project.ProjectEntity
+import com.cobalto.core.database.project.ProjectItemDao
+import com.cobalto.core.database.project.ProjectItemEntity
+import com.cobalto.core.database.project.ProjectModuleDao
+import com.cobalto.core.database.project.ProjectModuleEntity
 import com.cobalto.core.database.user.*
 
 @Database(entities = [CategoryEntity::class, SectionEntity::class,
     MakerEntity::class, ResourceEntity::class, ProviderEntity::class,
     PriceHistoryEntity::class, ProfileEntity::class, DbEntity::class,
     DbItemEntity::class, DbItemResourceEntity::class, DecimalFormatEntity::class,
-    IncidenceFormatEntity::class,
+    IncidenceFormatEntity::class, ProjectEntity::class, ProjectModuleEntity::class,
+    ProjectItemEntity::class,
     UserEntity::class, UserRoleEntity::class, UserProfessionEntity::class,
-    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 28)
+    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 31)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
@@ -51,6 +58,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dbItemResourceDao(): DbItemResourceDao
     abstract fun decimalFormatDao(): DecimalFormatDao
     abstract fun incidenceFormatDao(): IncidenceFormatDao
+    abstract fun projectDao(): ProjectDao
+    abstract fun projectModuleDao(): ProjectModuleDao
+    abstract fun projectItemDao(): ProjectItemDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

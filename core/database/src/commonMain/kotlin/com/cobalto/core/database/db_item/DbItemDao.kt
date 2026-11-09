@@ -5,8 +5,15 @@ import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
+data class DbItemCountEntity(
+    val dbId: String,
+    val count: Int
+)
+
 @Dao
 interface DbItemDao {
+    @Query("SELECT dbId, COUNT(*) AS count FROM DbItem GROUP BY dbId")
+    fun getItemCountsGroupedByDb(): Flow<List<DbItemCountEntity>>
     @Query("""
         SELECT 
             di.itemId,
