@@ -26,6 +26,7 @@ import com.cobalto.features.presupuesto.domain.model.ProjectItem
 import com.cobalto.features.presupuesto.domain.model.ProjectModule
 import com.cobalto.features.presupuesto.presentation.components.AddItemDialog
 import com.cobalto.features.presupuesto.presentation.components.AddModuleDialog
+import com.cobalto.features.presupuesto.presentation.components.DbItemPickerDialog
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -70,12 +71,38 @@ fun ProjectDetailScreen(
         )
     }
 
+    val initialModule = modules.firstOrNull()
+    var targetModuleForAddItem by remember { mutableStateOf<ProjectModule?>(null) }
+    var showDbItemPicker by remember { mutableStateOf(false) }
+    val availableDbs by viewModel.availableDbs.collectAsState()
+
+    if (showDbItemPicker) {
+        val activeTargetModule = targetModuleForAddItem ?: initialModule
+        DbItemPickerDialog(
+            availableDbs = availableDbs,
+            viewModel = viewModel,
+            onDismiss = { showDbItemPicker = false },
+            onSelectDbItem = { dbSubItem ->
+                val targetModuleId = activeTargetModule?.moduleId ?: run {
+                    viewModel.addModule(project.projectId, "M01", "PRESUPUESTO")
+                    modules.firstOrNull()?.moduleId ?: "default_m01"
+                }
+                viewModel.importDbItemToModule(
+                    projectId = project.projectId,
+                    moduleId = targetModuleId,
+                    dbSubItem = dbSubItem
+                )
+                showDbItemPicker = false
+            }
+        )
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Header Bar
+        // Header Bar (Barra 1 - Encabezado del Proyecto)
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainer,
             tonalElevation = 2.dp,
@@ -89,6 +116,7 @@ fun ProjectDetailScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
+                // Flecha de volver
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier.size(36.dp)
@@ -101,7 +129,20 @@ fun ProjectDetailScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                // Icono "+" a la derecha de la flecha de volver para crear un nuevo módulo
+                IconButton(
+                    onClick = { showAddModuleDialog = true },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Crear Módulo Nuevo",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -137,76 +178,27 @@ fun ProjectDetailScreen(
             }
         }
 
-        // Action Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Módulos e Ítems",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Button(
-                onClick = { showAddModuleDialog = true },
-                shape = IndustrialShapes.small,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Agregar Módulo", fontSize = 12.sp)
-            }
+        // Tarjeta 3 (Bloque de Módulos e Ítems) aparece desde el inicio
+        val displayModules = if (modules.isEmpty()) {
+            listOf(ProjectModule(moduleId = "default_m01", code = "M01", title = "PRESUPUESTO"))
+        } else {
+            modules
         }
 
-        // Modules and Items List
-        if (modules.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "No hay módulos agregados",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Agrega tu primer módulo (ej: 01.00 ESTRUCTURAS) para comenzar a estructurar el presupuesto.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(modules, key = { it.moduleId }) { module ->
-                    ModuleCardBlock(
-                        module = module,
-                        onAddItemClick = { selectedModuleForAddItem = module },
-                        onDeleteModule = { viewModel.deleteModule(module.moduleId) },
-                        onDeleteItem = { itemId -> viewModel.deleteItem(itemId) }
-                    )
-                }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(displayModules, key = { it.moduleId }) { module ->
+                ModuleCardBlock(
+                    module = module,
+                    onAddItemClick = {
+                        targetModuleForAddItem = module
+                        showDbItemPicker = true
+                    },
+                    onDeleteItem = { itemId -> viewModel.deleteItem(itemId) }
+                )
             }
         }
     }
@@ -216,7 +208,6 @@ fun ProjectDetailScreen(
 fun ModuleCardBlock(
     module: ProjectModule,
     onAddItemClick: () -> Unit,
-    onDeleteModule: () -> Unit,
     onDeleteItem: (String) -> Unit
 ) {
     Card(
@@ -263,14 +254,6 @@ fun ModuleCardBlock(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    IconButton(onClick = onDeleteModule, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Eliminar Módulo",
-                            tint = Color.Red.copy(alpha = 0.7f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
                 }
             }
 
@@ -306,16 +289,12 @@ fun ModuleCardBlock(
                         Text("Metrado", fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.weight(0.9f))
                         Text("P.Unit", fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.weight(0.9f))
                         Text("Parcial", fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.weight(1.0f))
-                        Spacer(modifier = Modifier.width(24.dp))
                     }
 
                     HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
                     module.items.forEach { item ->
-                        ItemTableRow(
-                            item = item,
-                            onDeleteItem = { onDeleteItem(item.itemId) }
-                        )
+                        ItemTableRow(item = item)
                         HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     }
                 }
@@ -326,8 +305,7 @@ fun ModuleCardBlock(
 
 @Composable
 fun ItemTableRow(
-    item: ProjectItem,
-    onDeleteItem: () -> Unit
+    item: ProjectItem
 ) {
     Row(
         modifier = Modifier
@@ -339,11 +317,8 @@ fun ItemTableRow(
         Text(text = item.name, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(2.2f))
         Text(text = item.unit, fontSize = 12.sp, modifier = Modifier.weight(0.6f))
         Text(text = formatDouble(item.quantity), fontSize = 12.sp, modifier = Modifier.weight(0.9f))
-        Text(text = "S/ ${formatDouble(item.unitPrice)}", fontSize = 12.sp, modifier = Modifier.weight(0.9f))
-        Text(text = "S/ ${formatDouble(item.totalAmount)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1.0f))
-        IconButton(onClick = onDeleteItem, modifier = Modifier.size(24.dp)) {
-            Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
-        }
+        Text(text = formatDouble(item.unitPrice), fontSize = 12.sp, modifier = Modifier.weight(0.9f))
+        Text(text = formatDouble(item.totalAmount), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1.0f))
     }
 }
 

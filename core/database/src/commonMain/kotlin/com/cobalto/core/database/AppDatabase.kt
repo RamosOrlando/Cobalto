@@ -31,6 +31,8 @@ import com.cobalto.core.database.project.ProjectDao
 import com.cobalto.core.database.project.ProjectEntity
 import com.cobalto.core.database.project.ProjectItemDao
 import com.cobalto.core.database.project.ProjectItemEntity
+import com.cobalto.core.database.project.ProjectItemResourceDao
+import com.cobalto.core.database.project.ProjectItemResourceEntity
 import com.cobalto.core.database.project.ProjectModuleDao
 import com.cobalto.core.database.project.ProjectModuleEntity
 import com.cobalto.core.database.user.*
@@ -40,9 +42,9 @@ import com.cobalto.core.database.user.*
     PriceHistoryEntity::class, ProfileEntity::class, DbEntity::class,
     DbItemEntity::class, DbItemResourceEntity::class, DecimalFormatEntity::class,
     IncidenceFormatEntity::class, ProjectEntity::class, ProjectModuleEntity::class,
-    ProjectItemEntity::class,
+    ProjectItemEntity::class, ProjectItemResourceEntity::class,
     UserEntity::class, UserRoleEntity::class, UserProfessionEntity::class,
-    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 31)
+    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 32)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
@@ -61,6 +63,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
     abstract fun projectModuleDao(): ProjectModuleDao
     abstract fun projectItemDao(): ProjectItemDao
+    abstract fun projectItemResourceDao(): ProjectItemResourceDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

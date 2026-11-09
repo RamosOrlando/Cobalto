@@ -48,6 +48,12 @@ class DbRepositoryImpl(
         }
     }
 
+    override fun getAllDbItems(): Flow<List<DbSubItem>> {
+        return dbItemDao.getAllDbItems().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
     override suspend fun syncDbItems(dbId: String) {
         runCatching {
             val remoteItems = remoteDataSource.getDbItems(dbId)

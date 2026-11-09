@@ -11,6 +11,7 @@ interface DbRepository {
     fun getItemCountsMap(): Flow<Map<String, Int>>
     suspend fun syncDbs()
     fun getDbItems(dbId: String): Flow<List<DbSubItem>>
+    fun getAllDbItems(): Flow<List<DbSubItem>>
     suspend fun syncDbItems(dbId: String)
     fun getApuResourcesForDbItem(itemId: String): Flow<List<ApuResourceItem>>
     fun getResourceCountsMap(): Flow<Map<String, DbItemResourceCounts>>

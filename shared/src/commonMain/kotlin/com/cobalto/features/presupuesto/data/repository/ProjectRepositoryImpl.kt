@@ -2,24 +2,31 @@ package com.cobalto.features.presupuesto.data.repository
 
 import com.cobalto.core.common.util.getCurrentIsoDate
 import com.cobalto.core.common.util.randomUUID
+import com.cobalto.core.database.db_item_resource.DbItemResourceDao
 import com.cobalto.core.database.project.ProjectDao
 import com.cobalto.core.database.project.ProjectEntity
 import com.cobalto.core.database.project.ProjectItemDao
 import com.cobalto.core.database.project.ProjectItemEntity
+import com.cobalto.core.database.project.ProjectItemResourceDao
+import com.cobalto.core.database.project.ProjectItemResourceEntity
 import com.cobalto.core.database.project.ProjectModuleDao
 import com.cobalto.core.database.project.ProjectModuleEntity
+import com.cobalto.features.db.domain.model.DbSubItem
 import com.cobalto.features.presupuesto.domain.model.Project
 import com.cobalto.features.presupuesto.domain.model.ProjectItem
 import com.cobalto.features.presupuesto.domain.model.ProjectModule
 import com.cobalto.features.presupuesto.domain.repository.ProjectRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class ProjectRepositoryImpl(
     private val projectDao: ProjectDao,
     private val projectModuleDao: ProjectModuleDao,
-    private val projectItemDao: ProjectItemDao
+    private val projectItemDao: ProjectItemDao,
+    private val dbItemResourceDao: DbItemResourceDao,
+    private val projectItemResourceDao: ProjectItemResourceDao
 ) : ProjectRepository {
 
     override fun getAllProjects(): Flow<List<Project>> {
@@ -58,6 +65,15 @@ class ProjectRepositoryImpl(
 
             projectDao.insertProject(entity)
 
+            // Insert default module M01 PRESUPUESTO
+            val defaultModule = ProjectModuleEntity(
+                moduleId = randomUUID(),
+                code = "M01",
+                title = "PRESUPUESTO",
+                orderIndex = 0
+            )
+            projectModuleDao.insertModule(defaultModule)
+
             Project(
                 projectId = entity.projectId,
                 name = entity.name,
@@ -73,6 +89,7 @@ class ProjectRepositoryImpl(
     override suspend fun deleteProject(projectId: String) {
         projectModuleDao.clearAllModules()
         projectItemDao.clearAllItems()
+        projectItemResourceDao.clearAllProjectItemResources()
         projectDao.deleteProject(projectId)
     }
 
@@ -159,5 +176,41 @@ class ProjectRepositoryImpl(
 
     override fun getProjectTotalAmount(projectId: String): Flow<Double> {
         return projectItemDao.getTotalAmount()
+    }
+
+    override suspend fun importDbItemToModule(
+        projectId: String,
+        moduleId: String,
+        dbSubItem: DbSubItem
+    ) {
+        val newItemId = randomUUID()
+        val entity = ProjectItemEntity(
+            itemId = newItemId,
+            moduleId = moduleId,
+            name = dbSubItem.name.trim(),
+            unit = dbSubItem.unit.trim(),
+            dbId = dbSubItem.dbId,
+            code = dbSubItem.code?.trim(),
+            imagePath = dbSubItem.imagePath,
+            unitPrice = dbSubItem.total ?: 0.0,
+            quantity = 1.0,
+            totalAmount = dbSubItem.total ?: 0.0,
+            orderIndex = 0
+        )
+        projectItemDao.insertItem(entity)
+
+        runCatching {
+            val resources = dbItemResourceDao.getResourcesForDbItem(dbSubItem.itemId).first()
+            if (resources.isNotEmpty()) {
+                val projectResources = resources.map { res ->
+                    ProjectItemResourceEntity(
+                        itemId = newItemId,
+                        resourceId = res.resourceId,
+                        quantity = res.quantity
+                    )
+                }
+                projectItemResourceDao.insertProjectItemResources(projectResources)
+            }
+        }
     }
 }

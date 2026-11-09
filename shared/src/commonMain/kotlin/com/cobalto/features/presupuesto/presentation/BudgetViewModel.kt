@@ -2,6 +2,9 @@ package com.cobalto.features.presupuesto.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cobalto.features.db.domain.model.DbItem
+import com.cobalto.features.db.domain.model.DbSubItem
+import com.cobalto.features.db.domain.repository.DbRepository
 import com.cobalto.features.presupuesto.domain.model.Project
 import com.cobalto.features.presupuesto.domain.model.ProjectModule
 import com.cobalto.features.presupuesto.domain.repository.ProjectRepository
@@ -14,10 +17,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class BudgetViewModel(
-    private val projectRepository: ProjectRepository
+    private val projectRepository: ProjectRepository,
+    private val dbRepository: DbRepository
 ) : ViewModel() {
 
     val projects: StateFlow<List<Project>> = projectRepository.getAllProjects()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val availableDbs: StateFlow<List<DbItem>> = dbRepository.getDbs()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -65,6 +76,20 @@ class BudgetViewModel(
     fun deleteModule(moduleId: String) {
         viewModelScope.launch {
             projectRepository.deleteModule(moduleId)
+        }
+    }
+
+    fun getDbItems(dbId: String): Flow<List<DbSubItem>> {
+        return dbRepository.getDbItems(dbId)
+    }
+
+    fun getAllDbItems(): Flow<List<DbSubItem>> {
+        return dbRepository.getAllDbItems()
+    }
+
+    fun importDbItemToModule(projectId: String, moduleId: String, dbSubItem: DbSubItem) {
+        viewModelScope.launch {
+            projectRepository.importDbItemToModule(projectId, moduleId, dbSubItem)
         }
     }
 

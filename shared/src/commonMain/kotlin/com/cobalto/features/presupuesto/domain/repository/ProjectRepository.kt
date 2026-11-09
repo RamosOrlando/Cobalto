@@ -28,4 +28,5 @@ interface ProjectRepository {
     suspend fun updateItemQuantityAndPrice(itemId: String, quantity: Double, unitPrice: Double)
     suspend fun deleteItem(itemId: String)
     fun getProjectTotalAmount(projectId: String): Flow<Double>
+    suspend fun importDbItemToModule(projectId: String, moduleId: String, dbSubItem: com.cobalto.features.db.domain.model.DbSubItem)
 }

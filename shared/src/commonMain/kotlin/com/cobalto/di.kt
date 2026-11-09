@@ -96,6 +96,7 @@ val dataModule = module {
     single { get<AppDatabase>().projectDao() }
     single { get<AppDatabase>().projectModuleDao() }
     single { get<AppDatabase>().projectItemDao() }
+    single { get<AppDatabase>().projectItemResourceDao() }
 
     factory<CategoryRemoteDataSource> { SupabaseCategoryDataSource(get()) }
     single<CategoryRepository> { CategoryRepositoryImpl(get(), get()) }
@@ -136,7 +137,7 @@ val dataModule = module {
     factory<UserRemoteDataSource> { SupabaseUserDataSource(get()) }
     single<UserRepository> { UserRepositoryImpl(get(), get()) }
 
-    single<ProjectRepository> { ProjectRepositoryImpl(get(), get(), get()) }
+    single<ProjectRepository> { ProjectRepositoryImpl(get(), get(), get(), get(), get()) }
 
     single<SyncRepository> { SyncRepositoryImpl(get(), get(), get(), get(), get(), get(), get()) }
 

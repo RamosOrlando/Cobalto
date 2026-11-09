@@ -14,6 +14,28 @@ data class DbItemCountEntity(
 interface DbItemDao {
     @Query("SELECT dbId, COUNT(*) AS count FROM DbItem GROUP BY dbId")
     fun getItemCountsGroupedByDb(): Flow<List<DbItemCountEntity>>
+
+    @Query("""
+        SELECT 
+            di.itemId,
+            di.name,
+            di.unit,
+            di.dbId,
+            di.Code,
+            di.imagePath,
+            COALESCE(
+                di.total,
+                (
+                    SELECT SUM(dir.quantity * COALESCE(r.price, 0.0))
+                    FROM DbItemResource dir
+                    LEFT JOIN Resource r ON dir.resourceId = r.resourceId
+                    WHERE dir.itemId = di.itemId
+                )
+            ) AS total
+        FROM DbItem di
+        ORDER BY di.name ASC
+    """)
+    fun getAllDbItems(): Flow<List<DbItemEntity>>
     @Query("""
         SELECT 
             di.itemId,
