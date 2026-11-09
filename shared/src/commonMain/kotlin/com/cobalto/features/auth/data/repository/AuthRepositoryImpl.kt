@@ -39,7 +39,7 @@ class AuthRepositoryImpl(
         return try {
             val user = supabaseClient.auth.signUpWith(
                 Email,
-                redirectUrl = "materialsp://auth-callback"
+                redirectUrl = "cobalto://auth-callback"
             ) {
                 this.email = email.trim()
                 this.password = password

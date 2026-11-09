@@ -1,9 +1,9 @@
 package com.cobalto
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.cobalto.features.db.presentation.DbScreen
+import com.cobalto.core.presentation.navigation.NavigationRoot
+import com.cobalto.core.presentation.theme.IndustrialTheme
 import org.koin.mp.KoinPlatformTools
 
 @Composable
@@ -13,7 +13,7 @@ fun App() {
         initKoin()
     }
 
-    MaterialTheme {
-        DbScreen()
+    IndustrialTheme {
+        NavigationRoot()
     }
 }

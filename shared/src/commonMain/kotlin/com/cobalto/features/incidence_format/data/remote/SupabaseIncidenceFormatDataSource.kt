@@ -15,4 +15,10 @@ class SupabaseIncidenceFormatDataSource(
             .select()
             .decodeList<IncidenceFormat>()
     }
+
+    override suspend fun updateIncidenceFormats(formats: List<IncidenceFormat>): Unit = withContext(Dispatchers.IO) {
+        supabaseClient.postgrest["IncidenceFormat"]
+            .upsert(formats)
+        Unit
+    }
 }

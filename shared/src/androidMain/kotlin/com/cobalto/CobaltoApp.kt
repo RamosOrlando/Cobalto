@@ -5,12 +5,12 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.logger.Level
 
-class MaterialsSPApp: Application() {
+class CobaltoApp : Application() {
     override fun onCreate() {
         super.onCreate()
         initKoin {
             androidLogger(Level.DEBUG)
-            androidContext(this@MaterialsSPApp)
+            androidContext(this@CobaltoApp)
         }
     }
 }

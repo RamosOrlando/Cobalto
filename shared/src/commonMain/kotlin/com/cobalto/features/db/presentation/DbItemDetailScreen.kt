@@ -41,6 +41,8 @@ import com.cobalto.core.common.domain.model.Resource
 import com.cobalto.core.domain.util.ResultState
 import com.cobalto.core.presentation.theme.IndustrialShapes
 import com.cobalto.features.db.domain.model.DbSubItem
+import com.cobalto.features.incidence_format.domain.util.ApuIncidenceCalculator
+import com.cobalto.features.incidence_format.domain.util.EvaluatedIncidence
 import com.cobalto.features.maker.data.remote.MakerRemoteDataSource
 import com.cobalto.features.resource.data.remote.ResourceRemoteDataSource
 import com.cobalto.features.resource.domain.model.ResourceWithPrices
@@ -87,6 +89,8 @@ fun DbItemDetailScreen(
     var activeFilterType by remember { mutableStateOf<ResourceFilterType?>(null) }
     var allDynamicResources by remember { mutableStateOf<List<ApuResourceItem>>(emptyList()) }
 
+    val incidenceFormats by viewModel.incidenceFormats.collectAsState()
+
     LaunchedEffect(item.itemId) {
         launch {
             runCatching { resourceRepository.refreshResources() }
@@ -118,8 +122,25 @@ fun DbItemDetailScreen(
         )
     }
 
-    val grandTotal = remember(apuSections) {
-        apuSections.sumOf { it.subtotal }
+    val evaluatedIncidences = remember(apuSections, incidenceFormats) {
+        val matSubtotal = apuSections.find { it.title == "MATERIALES" }?.subtotal ?: 0.0
+        val moSubtotal = apuSections.find { it.title == "MANO DE OBRA" }?.subtotal ?: 0.0
+        val eqSubtotal = apuSections.find { it.title == "EQUIPO, MAQUINARIA Y HERRAMIENTAS" }?.subtotal ?: 0.0
+
+        ApuIncidenceCalculator.calculateIncidences(
+            subtotalMaterials = matSubtotal,
+            subtotalLabor = moSubtotal,
+            subtotalEquipment = eqSubtotal,
+            incidences = incidenceFormats
+        )
+    }
+
+    val grandTotal = remember(apuSections, evaluatedIncidences) {
+        val finalIncidence = evaluatedIncidences.find {
+            it.incidence.codigo.uppercase() == "T-PU" || it.incidence.incidenceId.uppercase() == "M"
+        } ?: evaluatedIncidences.lastOrNull()
+
+        finalIncidence?.calculatedValue ?: apuSections.sumOf { it.subtotal }
     }
 
     // Persist grandTotal directly into DbItem.total (Room & Supabase)
@@ -134,13 +155,38 @@ fun DbItemDetailScreen(
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(width = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = item.name,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
+                                fontSize = 15.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -148,23 +194,12 @@ fun DbItemDetailScreen(
                             Text(
                                 text = "Código: ${item.code ?: "-"} | Unidad: ${item.unit}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp
                             )
                         }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                )
+                    }
+                }
             },
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
@@ -201,7 +236,7 @@ fun DbItemDetailScreen(
 
                             HorizontalDivider(thickness = 2.dp, color = Color.Black)
 
-                            // Render Each Section
+                            // Render Each APU Section
                             apuSections.forEach { section ->
                                 val filterType = when (section.title) {
                                     "MATERIALES" -> ResourceFilterType.MATERIALS
@@ -234,6 +269,12 @@ fun DbItemDetailScreen(
                                     }
                                 )
                                 HorizontalDivider(thickness = 1.5.dp, color = Color.Black)
+                            }
+
+                            // Incidencias / Indirect Costs Section
+                            if (evaluatedIncidences.any { it.incidence.isVisible && it.incidence.formula.trim() != "1" }) {
+                                ApuIncidenciasBlock(evaluatedIncidences = evaluatedIncidences)
+                                HorizontalDivider(thickness = 2.dp, color = Color.Black)
                             }
 
                             // Total Summary Row
@@ -285,6 +326,91 @@ fun DbItemDetailScreen(
                             quantity = 1.0
                         )
                     }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ApuIncidenciasBlock(
+    evaluatedIncidences: List<EvaluatedIncidence>
+) {
+    val visibleIncidences = remember(evaluatedIncidences) {
+        evaluatedIncidences.filter { it.incidence.isVisible && it.incidence.formula.trim() != "1" }
+    }
+
+    if (visibleIncidences.isEmpty()) return
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Section Header Row: INCIDENCIAS Y COSTOS INDIRECTOS
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+                .padding(vertical = 6.dp, horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Calculate,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "INCIDENCIAS Y COSTOS INDIRECTOS",
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+
+        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+        visibleIncidences.forEachIndexed { index, item ->
+            val isFinalRow = index == visibleIncidences.lastIndex || item.incidence.codigo.uppercase() == "T-PU"
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        if (isFinalRow) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        else Color.Transparent
+                    )
+                    .padding(vertical = 6.dp, horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = item.incidence.name,
+                        fontWeight = if (isFinalRow) FontWeight.ExtraBold else FontWeight.Medium,
+                        fontSize = if (isFinalRow) 13.sp else 12.sp,
+                        color = if (isFinalRow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (item.incidence.percent > 0.0 && item.incidence.percent < 100.0)
+                            "Fórmula: ${item.incidence.formula} (${item.incidence.percent}%)"
+                        else
+                            "Fórmula: ${item.incidence.formula}",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Text(
+                    text = "${formatNumber(item.calculatedValue)} Bs.",
+                    fontWeight = if (isFinalRow) FontWeight.ExtraBold else FontWeight.Bold,
+                    fontSize = if (isFinalRow) 14.sp else 12.sp,
+                    color = if (isFinalRow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            if (index < visibleIncidences.lastIndex) {
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                 )
             }
         }

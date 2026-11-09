@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface IncidenceFormatDao {
-    @Query("SELECT * FROM IncidenceFormat ORDER BY codigo ASC")
+    @Query("SELECT * FROM IncidenceFormat ORDER BY incidenceId ASC")
     fun getAllIncidenceFormats(): Flow<List<IncidenceFormatEntity>>
 
     @Query("SELECT * FROM IncidenceFormat WHERE codigo = :codigo LIMIT 1")

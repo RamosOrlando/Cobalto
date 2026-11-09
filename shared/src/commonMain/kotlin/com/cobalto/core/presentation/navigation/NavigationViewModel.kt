@@ -35,7 +35,7 @@ class NavigationViewModel(
                     // Si ya tenemos una pantalla inicial definida, no la sobreescribimos.
                     // Esto evita saltos de navegación automáticos durante flujos multi-paso como la recuperación de contraseña.
                     if (_initialScreen.value == null) {
-                        _initialScreen.value = Screen.Category
+                        _initialScreen.value = Screen.Home
                     }
                 } else {
                     syncManager.stopSyncing()

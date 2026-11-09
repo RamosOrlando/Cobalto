@@ -87,7 +87,7 @@ fun LoginScreenContent(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "MaterialsSP",
+                text = "Cobalto",
                 style = MaterialTheme.typography.headlineLarge,
                 color = IndustrialOrange,
                 fontWeight = FontWeight.ExtraBold

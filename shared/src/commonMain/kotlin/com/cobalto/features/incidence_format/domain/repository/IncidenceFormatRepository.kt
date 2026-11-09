@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface IncidenceFormatRepository {
     fun getIncidenceFormatsFlow(): Flow<List<IncidenceFormat>>
     suspend fun refreshIncidenceFormats()
+    suspend fun saveIncidenceFormatsLocally(formats: List<IncidenceFormat>)
 }

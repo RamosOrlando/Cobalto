@@ -58,7 +58,7 @@ fun NavigationRoot(
                     onLoginSuccess = {
                         viewModel.onLoginSuccess()
                         backstack.clear()
-                        backstack.add(Screen.Category)
+                        backstack.add(Screen.Home)
                     },
                     onNavigateToSignUp = {
                         backstack.add(Screen.SignUp)
@@ -69,7 +69,7 @@ fun NavigationRoot(
                     onSignUpSuccess = {
                         viewModel.onLoginSuccess()
                         backstack.clear()
-                        backstack.add(Screen.Category)
+                        backstack.add(Screen.Home)
                     }
                 )
                 else -> MainScreen(

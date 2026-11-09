@@ -32,4 +32,11 @@ class IncidenceFormatRepositoryImpl(
         }
         Unit
     }
+
+    override suspend fun saveIncidenceFormatsLocally(formats: List<IncidenceFormat>) = withContext(Dispatchers.IO) {
+        runCatching {
+            remoteDataSource.updateIncidenceFormats(formats)
+        }
+        incidenceFormatDao.insertIncidenceFormats(formats.map { it.toEntity() })
+    }
 }

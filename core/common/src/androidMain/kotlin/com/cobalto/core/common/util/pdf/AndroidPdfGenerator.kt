@@ -42,7 +42,7 @@ class AndroidPdfGenerator(private val context: Context) : PdfGenerator {
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         paint.textSize = 24f
         paint.color = Color.parseColor("#A04100") // IndustrialOrange
-        canvas.drawText("MaterialsSP", margin, currentY, paint)
+        canvas.drawText("Cobalto", margin, currentY, paint)
         
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
         paint.textSize = 10f

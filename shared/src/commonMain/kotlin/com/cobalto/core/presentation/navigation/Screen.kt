@@ -11,6 +11,12 @@ sealed interface Screen {
     data object SignUp : Screen
 
     @Serializable
+    data object Home : Screen
+
+    @Serializable
+    data object Profile : Screen
+
+    @Serializable
     data object Category : Screen
     
     @Serializable
@@ -36,4 +42,16 @@ sealed interface Screen {
     
     @Serializable
     data object PriceHistory : Screen
+
+    @Serializable
+    data object Db : Screen
+
+    @Serializable
+    data object Presupuesto : Screen
+
+    @Serializable
+    data object Materiales : Screen
+
+    @Serializable
+    data object Configuracion : Screen
 }

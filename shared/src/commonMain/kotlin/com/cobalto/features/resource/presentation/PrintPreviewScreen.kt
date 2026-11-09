@@ -104,7 +104,7 @@ fun PrintPreviewScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = "MaterialsSP",
+                                        text = "Cobalto",
                                         color = IndustrialOrange,
                                         fontWeight = FontWeight.Black,
                                         fontSize = 24.sp

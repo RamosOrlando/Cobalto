@@ -8,12 +8,16 @@ import com.cobalto.features.db.domain.model.DbSubItem
 import com.cobalto.features.db.domain.repository.DbRepository
 import com.cobalto.features.decimal_format.domain.model.DecimalFormat
 import com.cobalto.features.decimal_format.domain.repository.DecimalFormatRepository
+import com.cobalto.features.incidence_format.domain.model.IncidenceFormat
+import com.cobalto.features.incidence_format.domain.repository.IncidenceFormatRepository
+import com.cobalto.features.incidence_format.domain.util.ApuIncidenceCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -30,7 +34,8 @@ sealed interface DbEvent {
 
 class DbViewModel(
     private val repository: DbRepository,
-    private val decimalFormatRepository: DecimalFormatRepository
+    private val decimalFormatRepository: DecimalFormatRepository,
+    private val incidenceFormatRepository: IncidenceFormatRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -65,6 +70,13 @@ class DbViewModel(
             initialValue = emptyList()
         )
 
+    val incidenceFormats: StateFlow<List<IncidenceFormat>> = incidenceFormatRepository.getIncidenceFormatsFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     init {
         refresh()
     }
@@ -80,6 +92,7 @@ class DbViewModel(
         viewModelScope.launch {
             repository.syncDbs()
             decimalFormatRepository.refreshDecimalFormats()
+            incidenceFormatRepository.refreshIncidenceFormats()
         }
     }
 
@@ -136,6 +149,55 @@ class DbViewModel(
     fun saveDecimalFormatsLocally(formats: List<DecimalFormat>) {
         viewModelScope.launch {
             decimalFormatRepository.saveDecimalFormatsLocally(formats)
+        }
+    }
+
+    fun saveIncidenceFormatsLocally(formats: List<IncidenceFormat>, dbId: String? = null) {
+        viewModelScope.launch {
+            incidenceFormatRepository.saveIncidenceFormatsLocally(formats)
+
+            if (!dbId.isNullOrBlank()) {
+                recalculateAllDbItemTotals(formats, dbId)
+            }
+        }
+    }
+
+    private suspend fun recalculateAllDbItemTotals(
+        incidences: List<IncidenceFormat>,
+        dbId: String
+    ) {
+        runCatching {
+            val items = repository.getDbItems(dbId).first()
+            items.forEach { subItem ->
+                val resources = repository.getApuResourcesForDbItem(subItem.itemId).first()
+
+                val matSubtotal = resources
+                    .filter { it.sectionId != "Labor-Labor" && it.sectionId != "Equipment-Equipment" }
+                    .sumOf { it.totalPrice }
+
+                val moSubtotal = resources
+                    .filter { it.sectionId == "Labor-Labor" }
+                    .sumOf { it.totalPrice }
+
+                val eqSubtotal = resources
+                    .filter { it.sectionId == "Equipment-Equipment" }
+                    .sumOf { it.totalPrice }
+
+                val evaluated = ApuIncidenceCalculator.calculateIncidences(
+                    subtotalMaterials = matSubtotal,
+                    subtotalLabor = moSubtotal,
+                    subtotalEquipment = eqSubtotal,
+                    incidences = incidences
+                )
+
+                val finalIncidence = evaluated.find {
+                    it.incidence.codigo.uppercase() == "T-PU" || it.incidence.incidenceId.uppercase() == "M"
+                } ?: evaluated.lastOrNull()
+
+                val newTotal = finalIncidence?.calculatedValue ?: (matSubtotal + moSubtotal + eqSubtotal)
+
+                repository.updateDbItemTotal(subItem.itemId, newTotal)
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
@@ -32,10 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
 import com.cobalto.core.database.db_item_resource.DbItemResourceCounts
+import com.cobalto.core.presentation.components.LazyColumnFastScroller
 import com.cobalto.core.presentation.theme.*
 import com.cobalto.features.db.domain.model.DbItem
 import com.cobalto.features.db.domain.model.DbSubItem
 import com.cobalto.features.decimal_format.domain.model.DecimalFormat
+import com.cobalto.features.incidence_format.domain.model.IncidenceFormat
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,9 +55,11 @@ fun DbItemsScreen(
     var selectedItem by remember { mutableStateOf<DbSubItem?>(null) }
     var showCreateItemDialog by remember { mutableStateOf(false) }
     var showDecimalFormatDialog by remember { mutableStateOf(false) }
+    var showIncidenceFormatDialog by remember { mutableStateOf(false) }
 
     val resourceCountsMap by viewModel.resourceCountsMap.collectAsState()
     val decimalFormats by viewModel.decimalFormats.collectAsState()
+    val incidenceFormats by viewModel.incidenceFormats.collectAsState()
 
     LaunchedEffect(db.dbId) {
         viewModel.syncItemsForDb(db.dbId)
@@ -86,13 +91,38 @@ fun DbItemsScreen(
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(width = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = db.name,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
+                                fontSize = 15.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -100,36 +130,35 @@ fun DbItemsScreen(
                             Text(
                                 text = "${filteredItems.size} elementos",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp
                             )
                         }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    },
-                    actions = {
+
                         var showSettingsMenu by remember { mutableStateOf(false) }
 
-                        IconButton(onClick = { viewModel.syncItemsForDb(db.dbId) }) {
+                        IconButton(
+                            onClick = { viewModel.syncItemsForDb(db.dbId) },
+                            modifier = Modifier.size(36.dp)
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Refrescar",
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
 
                         Box {
-                            IconButton(onClick = { showSettingsMenu = true }) {
+                            IconButton(
+                                onClick = { showSettingsMenu = true },
+                                modifier = Modifier.size(36.dp)
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Settings,
                                     contentDescription = "Configuraciones",
-                                    tint = MaterialTheme.colorScheme.onSurface
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
 
@@ -155,6 +184,7 @@ fun DbItemsScreen(
                                     },
                                     onClick = {
                                         showSettingsMenu = false
+                                        showIncidenceFormatDialog = true
                                     }
                                 )
 
@@ -185,11 +215,8 @@ fun DbItemsScreen(
                                 )
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                )
+                    }
+                }
             },
             floatingActionButton = {
                 FloatingActionButton(
@@ -248,21 +275,29 @@ fun DbItemsScreen(
                         }
                     }
                 } else {
-                    LazyColumn(
+                    val listState = rememberLazyListState()
+
+                    LazyColumnFastScroller(
+                        listState = listState,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        itemsIndexed(filteredItems, key = { _, item -> item.itemId }) { index, item ->
-                            WhatsAppDbItemRow(
-                                item = item,
-                                counts = resourceCountsMap[item.itemId],
-                                onClick = { selectedItem = item }
-                            )
-                            if (index < filteredItems.lastIndex) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 72.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                    thickness = 0.5.dp
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(filteredItems, key = { _, item -> item.itemId }) { index, item ->
+                                WhatsAppDbItemRow(
+                                    item = item,
+                                    counts = resourceCountsMap[item.itemId],
+                                    onClick = { selectedItem = item }
                                 )
+                                if (index < filteredItems.lastIndex) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 72.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                        thickness = 0.5.dp
+                                    )
+                                }
                             }
                         }
                     }
@@ -291,6 +326,288 @@ fun DbItemsScreen(
                     onSave = { updatedList ->
                         viewModel.saveDecimalFormatsLocally(updatedList)
                     }
+                )
+            }
+
+            if (showIncidenceFormatDialog) {
+                IncidenceFormatDialog(
+                    initialFormats = incidenceFormats,
+                    onDismiss = { showIncidenceFormatDialog = false },
+                    onSave = { updatedList ->
+                        viewModel.saveIncidenceFormatsLocally(updatedList, db.dbId)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun IncidenceFormatDialog(
+    initialFormats: List<IncidenceFormat>,
+    onDismiss: () -> Unit,
+    onSave: (List<IncidenceFormat>) -> Unit
+) {
+    val baseFormats = remember(initialFormats) {
+        if (initialFormats.isNotEmpty()) {
+            initialFormats.sortedBy { it.incidenceId.uppercase() }
+        } else {
+            listOf(
+                IncidenceFormat("A", "SUBT-MAT", "SUBTOTAL MATERIALES", 100.0, "1", "PU-PARCIAL", true),
+                IncidenceFormat("B", "SUBT-MO", "SUBTOTAL MANO DE OBRA", 100.0, "1", "PU-PARCIAL", true),
+                IncidenceFormat("C", "SUBT-HE", "SUBTOTAL HERRAMIENTAS Y EQUIPO", 100.0, "1", "PU-PARCIAL", true),
+                IncidenceFormat("D", "T-MAT", "TOTAL MATERIALES", 100.0, "A", "PU-PARCIAL", true),
+                IncidenceFormat("E", "CS", "CARGAS SOCIALES", 55.0, "B", "PU-PARCIAL", true),
+                IncidenceFormat("F", "IVA", "IMPUESTOS IVA MANO DE OBRA", 14.94, "B+E", "PU-PARCIAL", true),
+                IncidenceFormat("G", "T-MO", "TOTAL MANO DE OBRA", 100.0, "B+E+F", "PU-PARCIAL", true),
+                IncidenceFormat("H", "HM", "HERRAMIENTAS MENORES", 5.0, "C", "PU-PARCIAL", true),
+                IncidenceFormat("I", "T-HE", "TOTAL HERRAMIENTAS Y EQUIPOS", 100.0, "C+H", "PU-PARCIAL", true),
+                IncidenceFormat("J", "GGA", "GASTOS GENERALES Y ADMINISTRATIVOS", 10.0, "D+G+I", "PU-PARCIAL", true),
+                IncidenceFormat("K", "UTIL", "UTILIDAD", 10.0, "D+G+I+J", "PU-PARCIAL", true),
+                IncidenceFormat("L", "IT", "IMPUESTO A LAS TRANSACCIONES", 3.09, "D+G+I+J+K", "PU-PARCIAL", true),
+                IncidenceFormat("M", "T-PU", "TOTAL PRECIO UNITARIO", 100.0, "D+G+I+J+K+L", "PU-PARCIAL", true)
+            )
+        }
+    }
+
+    val editedPercents = remember(baseFormats) {
+        mutableStateMapOf<String, String>().apply {
+            baseFormats.forEach { format ->
+                put(format.incidenceId, format.percent.toString())
+            }
+        }
+    }
+
+    val editedFormulas = remember(baseFormats) {
+        mutableStateMapOf<String, String>().apply {
+            baseFormats.forEach { format ->
+                put(format.incidenceId, format.formula)
+            }
+        }
+    }
+
+    val baseDirectItems = remember(baseFormats) {
+        baseFormats.filter { it.formula.trim() == "1" }
+    }
+    val dependentItems = remember(baseFormats) {
+        baseFormats.filter { it.formula.trim() != "1" }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Parámetros de cálculo",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 500.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Section 1: Base direct items A, B, C legend
+                if (baseDirectItems.isNotEmpty()) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+                        shape = IndustrialShapes.small,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Bases de Cálculo Directo",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            baseDirectItems.forEach { baseItem ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    ) {
+                                        Text(
+                                            text = "[${baseItem.incidenceId}]",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = baseItem.name,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Section 2: Dependent Incidence Formats (Formula & Percent Editable)
+                if (dependentItems.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Porcentajes e Incidencias Indirectas",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                        dependentItems.forEach { format ->
+                            IncidenceFormatRow(
+                                format = format,
+                                percentTextValue = editedPercents[format.incidenceId] ?: format.percent.toString(),
+                                formulaTextValue = editedFormulas[format.incidenceId] ?: format.formula,
+                                onPercentValueChange = { newText ->
+                                    editedPercents[format.incidenceId] = newText
+                                },
+                                onFormulaValueChange = { newFormula ->
+                                    editedFormulas[format.incidenceId] = newFormula
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val updatedList = baseFormats.map { format ->
+                        if (format.formula.trim() == "1") {
+                            format
+                        } else {
+                            val percentText = editedPercents[format.incidenceId]
+                            val parsedPercent = percentText?.toDoubleOrNull() ?: format.percent
+                            val formulaText = editedFormulas[format.incidenceId]
+                            val validFormula = if (!formulaText.isNullOrBlank()) formulaText.trim() else format.formula
+                            format.copy(
+                                percent = parsedPercent,
+                                formula = validFormula
+                            )
+                        }
+                    }
+                    onSave(updatedList)
+                    onDismiss()
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+fun IncidenceFormatRow(
+    format: IncidenceFormat,
+    percentTextValue: String,
+    formulaTextValue: String,
+    onPercentValueChange: (String) -> Unit,
+    onFormulaValueChange: (String) -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Header Row: [ID Badge] + Name
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = CircleShape
+                ) {
+                    Text(
+                        text = "[${format.incidenceId}]",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = format.name,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Input Fields Row: Formula TextField + Percent TextField
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Editable Formula Field
+                OutlinedTextField(
+                    value = formulaTextValue,
+                    onValueChange = { input ->
+                        onFormulaValueChange(input.uppercase())
+                    },
+                    label = { Text("Fórmula", fontSize = 10.sp) },
+                    placeholder = { Text("Ej: B+E") },
+                    modifier = Modifier.weight(1.3f),
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    shape = IndustrialShapes.small
+                )
+
+                // Editable Percent Field
+                OutlinedTextField(
+                    value = percentTextValue,
+                    onValueChange = { input ->
+                        if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            onPercentValueChange(input)
+                        }
+                    },
+                    label = { Text("Porcentaje (%)", fontSize = 10.sp) },
+                    placeholder = { Text("%") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    shape = IndustrialShapes.small
                 )
             }
         }
@@ -437,7 +754,7 @@ fun DecimalFormatRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
             Text(
                 text = format.name,
                 fontWeight = FontWeight.Medium,
