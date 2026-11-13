@@ -12,7 +12,7 @@ interface ProjectRepository {
 
     fun getModulesForProject(projectId: String): Flow<List<ProjectModule>>
     suspend fun addModule(projectId: String, code: String, title: String)
-    suspend fun deleteModule(moduleId: String)
+    suspend fun deleteModule(projectId: String, moduleId: String)
 
     suspend fun addItem(
         projectId: String,
@@ -25,8 +25,10 @@ interface ProjectRepository {
         dbId: String? = null,
         imagePath: String? = null
     )
-    suspend fun updateItemQuantityAndPrice(itemId: String, quantity: Double, unitPrice: Double)
-    suspend fun deleteItem(itemId: String)
+    suspend fun updateItemQuantityAndPrice(projectId: String, itemId: String, quantity: Double, unitPrice: Double)
+    suspend fun deleteItem(projectId: String, itemId: String)
     fun getProjectTotalAmount(projectId: String): Flow<Double>
     suspend fun importDbItemToModule(projectId: String, moduleId: String, dbSubItem: com.cobalto.features.db.domain.model.DbSubItem)
+    fun getProjectIncidenceFormats(projectId: String): Flow<List<com.cobalto.features.incidence_format.domain.model.IncidenceFormat>>
+    suspend fun saveProjectIncidenceFormats(projectId: String, formats: List<com.cobalto.features.incidence_format.domain.model.IncidenceFormat>)
 }

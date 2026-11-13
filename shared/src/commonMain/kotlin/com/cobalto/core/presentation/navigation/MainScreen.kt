@@ -35,8 +35,8 @@ import com.cobalto.features.db.presentation.DbScreen
 import com.cobalto.features.db.presentation.DbViewModel
 import com.cobalto.features.maker.presentation.MakerScreen
 import com.cobalto.features.price_history.presentation.PriceHistoryScreen
-import com.cobalto.features.presupuesto.presentation.BudgetScreen
-import com.cobalto.features.presupuesto.presentation.BudgetViewModel
+import com.cobalto.features.presupuesto.presentation.ProjectScreen
+import com.cobalto.features.presupuesto.presentation.ProjectViewModel
 import com.cobalto.features.profile.presentation.ProfileScreen
 import com.cobalto.features.provider.presentation.ProviderScreen
 import com.cobalto.features.resource.presentation.PrintPreviewScreen
@@ -191,13 +191,13 @@ fun MainScreenContent(
                         }
 
                         if (currentScreen is Screen.Presupuesto) {
-                            val budgetViewModel: BudgetViewModel = koinViewModel()
+                            val projectViewModel: ProjectViewModel = koinViewModel()
                             var showPresupuestoMenu by remember { mutableStateOf(false) }
 
                             Box {
                                 IconButton(onClick = { showPresupuestoMenu = true }) {
                                     Icon(
-                                        imageVector = Icons.Default.MoreVert,
+                                        imageVector = Icons.Default.Settings,
                                         contentDescription = "Opciones de Presupuesto",
                                         tint = MaterialTheme.colorScheme.onSurface
                                     )
@@ -225,7 +225,7 @@ fun MainScreenContent(
                                         },
                                         onClick = {
                                             showPresupuestoMenu = false
-                                            budgetViewModel.onShowCreateDialog()
+                                            projectViewModel.onShowCreateDialog()
                                         }
                                     )
 
@@ -271,6 +271,7 @@ fun MainScreenContent(
                                         },
                                         onClick = {
                                             showPresupuestoMenu = false
+                                            projectViewModel.onShowIncidenceDialog()
                                         }
                                     )
 
@@ -469,7 +470,7 @@ fun MainScreenContent(
                                     }
                                 )
                                 Screen.Db -> DbScreen()
-                                Screen.Presupuesto -> BudgetScreen()
+                                Screen.Presupuesto -> ProjectScreen()
                                 Screen.Configuracion -> PlaceholderScreen("Configuración", Icons.Default.Settings)
                                 else -> {
                                     Spacer(Modifier.size(0.dp))

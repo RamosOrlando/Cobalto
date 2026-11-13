@@ -3,6 +3,8 @@ package com.cobalto
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.cobalto.core.database.AppDatabase
+import com.cobalto.core.database.AppDatabaseConstructor
+import com.cobalto.core.database.ProjectDatabaseFactory
 import com.cobalto.core.common.util.pdf.AndroidPdfGenerator
 import com.cobalto.core.common.util.pdf.PdfGenerator
 import com.cobalto.core.common.util.share.AndroidShareManager
@@ -16,10 +18,12 @@ actual val platformModule = module {
         val dbFile = context.getDatabasePath("materials.db")
         Room.databaseBuilder<AppDatabase>(
             context = context,
-            name = dbFile.absolutePath
+            name = dbFile.absolutePath,
+            factory = { AppDatabaseConstructor.initialize() }
         ).fallbackToDestructiveMigration(true)
     }
-    
+
+    single { ProjectDatabaseFactory(androidContext()) }
     single<PdfGenerator> { AndroidPdfGenerator(androidContext()) }
     single<ShareManager> { AndroidShareManager(androidContext()) }
 }

@@ -1,0 +1,1339 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 33,
+    "identityHash": "e6dd37fbeb686f8399c7a14c472577c8",
+    "entities": [
+      {
+        "tableName": "Category",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`categoryId` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `imagePath` TEXT, PRIMARY KEY(`categoryId`))",
+        "fields": [
+          {
+            "fieldPath": "categoryId",
+            "columnName": "categoryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "categoryId"
+          ]
+        }
+      },
+      {
+        "tableName": "Section",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sectionId` TEXT NOT NULL, `name` TEXT NOT NULL, `categoryId` TEXT NOT NULL, `imagePath` TEXT, PRIMARY KEY(`sectionId`), FOREIGN KEY(`categoryId`) REFERENCES `Category`(`categoryId`) ON UPDATE CASCADE ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "sectionId",
+            "columnName": "sectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryId",
+            "columnName": "categoryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sectionId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_Section_categoryId",
+            "unique": false,
+            "columnNames": [
+              "categoryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_Section_categoryId` ON `${TABLE_NAME}` (`categoryId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "Category",
+            "onDelete": "RESTRICT",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "categoryId"
+            ],
+            "referencedColumns": [
+              "categoryId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "Maker",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`makerId` TEXT NOT NULL, `name` TEXT NOT NULL, `imagePath` TEXT, PRIMARY KEY(`makerId`))",
+        "fields": [
+          {
+            "fieldPath": "makerId",
+            "columnName": "makerId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "makerId"
+          ]
+        }
+      },
+      {
+        "tableName": "Resource",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resourceId` TEXT NOT NULL, `name` TEXT NOT NULL, `unit` TEXT NOT NULL, `makerId` TEXT NOT NULL, `sectionId` TEXT NOT NULL, `specId` TEXT, `providerId` TEXT, `price` REAL, `quoteDate` TEXT, PRIMARY KEY(`resourceId`))",
+        "fields": [
+          {
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "makerId",
+            "columnName": "makerId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sectionId",
+            "columnName": "sectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "specId",
+            "columnName": "specId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "providerId",
+            "columnName": "providerId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "quoteDate",
+            "columnName": "quoteDate",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "resourceId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_Resource_makerId",
+            "unique": false,
+            "columnNames": [
+              "makerId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_Resource_makerId` ON `${TABLE_NAME}` (`makerId`)"
+          },
+          {
+            "name": "index_Resource_sectionId",
+            "unique": false,
+            "columnNames": [
+              "sectionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_Resource_sectionId` ON `${TABLE_NAME}` (`sectionId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "Provider",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`providerId` TEXT NOT NULL, `name` TEXT NOT NULL, `address` TEXT, `telephone` TEXT, `city` TEXT NOT NULL, `email` TEXT, `imagePath` TEXT, PRIMARY KEY(`providerId`))",
+        "fields": [
+          {
+            "fieldPath": "providerId",
+            "columnName": "providerId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "telephone",
+            "columnName": "telephone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "city",
+            "columnName": "city",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "providerId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_Provider_name_address_city",
+            "unique": true,
+            "columnNames": [
+              "name",
+              "address",
+              "city"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_Provider_name_address_city` ON `${TABLE_NAME}` (`name`, `address`, `city`)"
+          }
+        ]
+      },
+      {
+        "tableName": "PriceHistory",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`historyId` TEXT NOT NULL, `resourceId` TEXT NOT NULL, `providerId` TEXT NOT NULL, `price` REAL NOT NULL, `quoteDate` TEXT NOT NULL, `username` TEXT NOT NULL, PRIMARY KEY(`historyId`), FOREIGN KEY(`resourceId`) REFERENCES `Resource`(`resourceId`) ON UPDATE CASCADE ON DELETE CASCADE , FOREIGN KEY(`providerId`) REFERENCES `Provider`(`providerId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "historyId",
+            "columnName": "historyId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialId",
+            "columnName": "resourceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "providerId",
+            "columnName": "providerId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quoteDate",
+            "columnName": "quoteDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "username",
+            "columnName": "username",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "historyId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_PriceHistory_resourceId",
+            "unique": false,
+            "columnNames": [
+              "resourceId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_PriceHistory_resourceId` ON `${TABLE_NAME}` (`resourceId`)"
+          },
+          {
+            "name": "index_PriceHistory_providerId",
+            "unique": false,
+            "columnNames": [
+              "providerId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_PriceHistory_providerId` ON `${TABLE_NAME}` (`providerId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "Resource",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "resourceId"
+            ],
+            "referencedColumns": [
+              "resourceId"
+            ]
+          },
+          {
+            "table": "Provider",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "providerId"
+            ],
+            "referencedColumns": [
+              "providerId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "Profile",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `fullName` TEXT, `email` TEXT NOT NULL, `role` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fullName",
+            "columnName": "fullName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "Db",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dbId` TEXT NOT NULL, `name` TEXT NOT NULL, `imagePath` TEXT, PRIMARY KEY(`dbId`))",
+        "fields": [
+          {
+            "fieldPath": "dbId",
+            "columnName": "dbId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "dbId"
+          ]
+        }
+      },
+      {
+        "tableName": "DbItem",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` TEXT NOT NULL, `name` TEXT NOT NULL, `unit` TEXT NOT NULL, `dbId` TEXT NOT NULL, `Code` TEXT, `imagePath` TEXT, `total` REAL, PRIMARY KEY(`itemId`))",
+        "fields": [
+          {
+            "fieldPath": "itemId",
+            "columnName": "itemId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dbId",
+            "columnName": "dbId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "Code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "total",
+            "columnName": "total",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "itemId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_DbItem_dbId",
+            "unique": false,
+            "columnNames": [
+              "dbId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_DbItem_dbId` ON `${TABLE_NAME}` (`dbId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "DbItemResource",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` TEXT NOT NULL, `resourceId` TEXT NOT NULL, `quantity` REAL NOT NULL, PRIMARY KEY(`itemId`, `resourceId`))",
+        "fields": [
+          {
+            "fieldPath": "itemId",
+            "columnName": "itemId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "itemId",
+            "resourceId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_DbItemResource_itemId",
+            "unique": false,
+            "columnNames": [
+              "itemId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_DbItemResource_itemId` ON `${TABLE_NAME}` (`itemId`)"
+          },
+          {
+            "name": "index_DbItemResource_resourceId",
+            "unique": false,
+            "columnNames": [
+              "resourceId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_DbItemResource_resourceId` ON `${TABLE_NAME}` (`resourceId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "DecimalFormat",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`decimalId` TEXT NOT NULL, `codigo` TEXT NOT NULL, `name` TEXT NOT NULL, `number` INTEGER NOT NULL, PRIMARY KEY(`decimalId`))",
+        "fields": [
+          {
+            "fieldPath": "decimalId",
+            "columnName": "decimalId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codigo",
+            "columnName": "codigo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "number",
+            "columnName": "number",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "decimalId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_DecimalFormat_codigo",
+            "unique": true,
+            "columnNames": [
+              "codigo"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_DecimalFormat_codigo` ON `${TABLE_NAME}` (`codigo`)"
+          },
+          {
+            "name": "index_DecimalFormat_name",
+            "unique": true,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_DecimalFormat_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "IncidenceFormat",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`incidenceId` TEXT NOT NULL, `codigo` TEXT NOT NULL, `name` TEXT NOT NULL, `percent` REAL NOT NULL, `formula` TEXT NOT NULL, `decimalId` TEXT NOT NULL, `isVisible` INTEGER NOT NULL, PRIMARY KEY(`incidenceId`))",
+        "fields": [
+          {
+            "fieldPath": "incidenceId",
+            "columnName": "incidenceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codigo",
+            "columnName": "codigo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "percent",
+            "columnName": "percent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formula",
+            "columnName": "formula",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "decimalId",
+            "columnName": "decimalId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isVisible",
+            "columnName": "isVisible",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "incidenceId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_IncidenceFormat_codigo",
+            "unique": true,
+            "columnNames": [
+              "codigo"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_IncidenceFormat_codigo` ON `${TABLE_NAME}` (`codigo`)"
+          },
+          {
+            "name": "index_IncidenceFormat_name",
+            "unique": true,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_IncidenceFormat_name` ON `${TABLE_NAME}` (`name`)"
+          },
+          {
+            "name": "index_IncidenceFormat_decimalId",
+            "unique": false,
+            "columnNames": [
+              "decimalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_IncidenceFormat_decimalId` ON `${TABLE_NAME}` (`decimalId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "Project",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`projectId` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `filePath` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `totalAmount` REAL NOT NULL, PRIMARY KEY(`projectId`))",
+        "fields": [
+          {
+            "fieldPath": "projectId",
+            "columnName": "projectId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "filePath",
+            "columnName": "filePath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAmount",
+            "columnName": "totalAmount",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "projectId"
+          ]
+        }
+      },
+      {
+        "tableName": "ProjectModule",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`moduleId` TEXT NOT NULL, `projectId` TEXT NOT NULL, `code` TEXT NOT NULL, `title` TEXT NOT NULL, `orderIndex` INTEGER NOT NULL, PRIMARY KEY(`moduleId`))",
+        "fields": [
+          {
+            "fieldPath": "moduleId",
+            "columnName": "moduleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "projectId",
+            "columnName": "projectId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "orderIndex",
+            "columnName": "orderIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "moduleId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ProjectModule_projectId",
+            "unique": false,
+            "columnNames": [
+              "projectId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProjectModule_projectId` ON `${TABLE_NAME}` (`projectId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ProjectItem",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` TEXT NOT NULL, `moduleId` TEXT NOT NULL, `name` TEXT NOT NULL, `unit` TEXT NOT NULL, `dbId` TEXT, `Code` TEXT, `imagePath` TEXT, `unitPrice` REAL NOT NULL, `quantity` REAL NOT NULL, `totalAmount` REAL NOT NULL, `orderIndex` INTEGER NOT NULL, PRIMARY KEY(`itemId`))",
+        "fields": [
+          {
+            "fieldPath": "itemId",
+            "columnName": "itemId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "moduleId",
+            "columnName": "moduleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dbId",
+            "columnName": "dbId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "Code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "unitPrice",
+            "columnName": "unitPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAmount",
+            "columnName": "totalAmount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "orderIndex",
+            "columnName": "orderIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "itemId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ProjectItem_moduleId",
+            "unique": false,
+            "columnNames": [
+              "moduleId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProjectItem_moduleId` ON `${TABLE_NAME}` (`moduleId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ProjectItemResource",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` TEXT NOT NULL, `resourceId` TEXT NOT NULL, `quantity` REAL NOT NULL, PRIMARY KEY(`itemId`, `resourceId`))",
+        "fields": [
+          {
+            "fieldPath": "itemId",
+            "columnName": "itemId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "itemId",
+            "resourceId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ProjectItemResource_itemId",
+            "unique": false,
+            "columnNames": [
+              "itemId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProjectItemResource_itemId` ON `${TABLE_NAME}` (`itemId`)"
+          },
+          {
+            "name": "index_ProjectItemResource_resourceId",
+            "unique": false,
+            "columnNames": [
+              "resourceId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProjectItemResource_resourceId` ON `${TABLE_NAME}` (`resourceId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ProjectIncidenceFormat",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`incidenceId` TEXT NOT NULL, `projectId` TEXT NOT NULL, `codigo` TEXT NOT NULL, `name` TEXT NOT NULL, `percent` REAL NOT NULL, `formula` TEXT NOT NULL, `decimalId` TEXT NOT NULL, `isVisible` INTEGER NOT NULL, PRIMARY KEY(`projectId`, `incidenceId`))",
+        "fields": [
+          {
+            "fieldPath": "incidenceId",
+            "columnName": "incidenceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "projectId",
+            "columnName": "projectId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codigo",
+            "columnName": "codigo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "percent",
+            "columnName": "percent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formula",
+            "columnName": "formula",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "decimalId",
+            "columnName": "decimalId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isVisible",
+            "columnName": "isVisible",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "projectId",
+            "incidenceId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ProjectIncidenceFormat_projectId",
+            "unique": false,
+            "columnNames": [
+              "projectId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProjectIncidenceFormat_projectId` ON `${TABLE_NAME}` (`projectId`)"
+          },
+          {
+            "name": "index_ProjectIncidenceFormat_codigo",
+            "unique": false,
+            "columnNames": [
+              "codigo"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProjectIncidenceFormat_codigo` ON `${TABLE_NAME}` (`codigo`)"
+          },
+          {
+            "name": "index_ProjectIncidenceFormat_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ProjectIncidenceFormat_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "User",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`userId` TEXT NOT NULL, `name` TEXT NOT NULL, `lastName` TEXT NOT NULL, `email` TEXT NOT NULL, `roleId` INTEGER NOT NULL, `professionId` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `cellphone` INTEGER, PRIMARY KEY(`userId`), FOREIGN KEY(`roleId`) REFERENCES `UserRole`(`roleId`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`professionId`) REFERENCES `UserProfession`(`professionId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastName",
+            "columnName": "lastName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roleId",
+            "columnName": "roleId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "professionId",
+            "columnName": "professionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cellphone",
+            "columnName": "cellphone",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "userId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_User_roleId",
+            "unique": false,
+            "columnNames": [
+              "roleId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_User_roleId` ON `${TABLE_NAME}` (`roleId`)"
+          },
+          {
+            "name": "index_User_professionId",
+            "unique": false,
+            "columnNames": [
+              "professionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_User_professionId` ON `${TABLE_NAME}` (`professionId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "UserRole",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "roleId"
+            ],
+            "referencedColumns": [
+              "roleId"
+            ]
+          },
+          {
+            "table": "UserProfession",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "professionId"
+            ],
+            "referencedColumns": [
+              "professionId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "UserRole",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`roleId` INTEGER NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`roleId`))",
+        "fields": [
+          {
+            "fieldPath": "roleId",
+            "columnName": "roleId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "roleId"
+          ]
+        }
+      },
+      {
+        "tableName": "UserProfession",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`professionId` INTEGER NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`professionId`))",
+        "fields": [
+          {
+            "fieldPath": "professionId",
+            "columnName": "professionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "professionId"
+          ]
+        }
+      },
+      {
+        "tableName": "UserPlan",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`planId` INTEGER NOT NULL, `name` TEXT NOT NULL, `price` REAL NOT NULL, `discountPrice` REAL, `discountStartDate` TEXT, `discountEndDate` TEXT, `durationDays` INTEGER NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`planId`))",
+        "fields": [
+          {
+            "fieldPath": "planId",
+            "columnName": "planId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "discountPrice",
+            "columnName": "discountPrice",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "discountStartDate",
+            "columnName": "discountStartDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "discountEndDate",
+            "columnName": "discountEndDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationDays",
+            "columnName": "durationDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "planId"
+          ]
+        }
+      },
+      {
+        "tableName": "SubscriptionHistory",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`subHistoryId` TEXT NOT NULL, `userId` TEXT NOT NULL, `planId` INTEGER NOT NULL, `startDate` TEXT NOT NULL, `endDate` TEXT NOT NULL, `state` TEXT NOT NULL, `pricePaid` REAL NOT NULL, `discountAmount` REAL NOT NULL, PRIMARY KEY(`subHistoryId`), FOREIGN KEY(`userId`) REFERENCES `User`(`userId`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`planId`) REFERENCES `UserPlan`(`planId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "subHistoryId",
+            "columnName": "subHistoryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planId",
+            "columnName": "planId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "startDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "endDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pricePaid",
+            "columnName": "pricePaid",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "discountAmount",
+            "columnName": "discountAmount",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "subHistoryId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_SubscriptionHistory_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_SubscriptionHistory_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_SubscriptionHistory_planId",
+            "unique": false,
+            "columnNames": [
+              "planId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_SubscriptionHistory_planId` ON `${TABLE_NAME}` (`planId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "User",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "userId"
+            ],
+            "referencedColumns": [
+              "userId"
+            ]
+          },
+          {
+            "table": "UserPlan",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "planId"
+            ],
+            "referencedColumns": [
+              "planId"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e6dd37fbeb686f8399c7a14c472577c8')"
+    ]
+  }
+}

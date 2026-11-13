@@ -19,12 +19,12 @@ import androidx.compose.ui.unit.sp
 import com.cobalto.core.presentation.theme.IndustrialShapes
 import com.cobalto.features.db.domain.model.DbItem
 import com.cobalto.features.db.domain.model.DbSubItem
-import com.cobalto.features.presupuesto.presentation.BudgetViewModel
+import com.cobalto.features.presupuesto.presentation.ProjectViewModel
 
 @Composable
 fun DbItemPickerDialog(
     availableDbs: List<DbItem>,
-    viewModel: BudgetViewModel,
+    viewModel: ProjectViewModel,
     onDismiss: () -> Unit,
     onSelectDbItem: (DbSubItem) -> Unit
 ) {
@@ -40,7 +40,11 @@ fun DbItemPickerDialog(
 
     LaunchedEffect(selectedDb, availableDbs) {
         isLoading = true
+        if (availableDbs.isEmpty()) {
+            viewModel.refreshDbData()
+        }
         if (selectedDb != null) {
+            viewModel.syncDbItemsForDb(selectedDb.dbId)
             viewModel.getDbItems(selectedDb.dbId).collect { items ->
                 dbItems = items
                 isLoading = false

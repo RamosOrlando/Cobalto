@@ -34,7 +34,7 @@ fun ProjectDetailScreen(
     project: Project,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: BudgetViewModel = koinViewModel()
+    viewModel: ProjectViewModel = koinViewModel()
 ) {
     var showAddModuleDialog by remember { mutableStateOf(false) }
     var selectedModuleForAddItem by remember { mutableStateOf<ProjectModule?>(null) }
@@ -71,22 +71,18 @@ fun ProjectDetailScreen(
         )
     }
 
-    val initialModule = modules.firstOrNull()
     var targetModuleForAddItem by remember { mutableStateOf<ProjectModule?>(null) }
     var showDbItemPicker by remember { mutableStateOf(false) }
     val availableDbs by viewModel.availableDbs.collectAsState()
 
     if (showDbItemPicker) {
-        val activeTargetModule = targetModuleForAddItem ?: initialModule
         DbItemPickerDialog(
             availableDbs = availableDbs,
             viewModel = viewModel,
             onDismiss = { showDbItemPicker = false },
             onSelectDbItem = { dbSubItem ->
-                val targetModuleId = activeTargetModule?.moduleId ?: run {
-                    viewModel.addModule(project.projectId, "M01", "PRESUPUESTO")
-                    modules.firstOrNull()?.moduleId ?: "default_m01"
-                }
+                val targetModule = targetModuleForAddItem ?: modules.firstOrNull()
+                val targetModuleId = targetModule?.moduleId ?: ""
                 viewModel.importDbItemToModule(
                     projectId = project.projectId,
                     moduleId = targetModuleId,
@@ -197,7 +193,7 @@ fun ProjectDetailScreen(
                         targetModuleForAddItem = module
                         showDbItemPicker = true
                     },
-                    onDeleteItem = { itemId -> viewModel.deleteItem(itemId) }
+                    onDeleteItem = { itemId -> viewModel.deleteItem(project.projectId, itemId) }
                 )
             }
         }

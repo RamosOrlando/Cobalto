@@ -29,6 +29,8 @@ import com.cobalto.core.database.auth.ProfileDao
 import com.cobalto.core.database.auth.ProfileEntity
 import com.cobalto.core.database.project.ProjectDao
 import com.cobalto.core.database.project.ProjectEntity
+import com.cobalto.core.database.project.ProjectIncidenceFormatDao
+import com.cobalto.core.database.project.ProjectIncidenceFormatEntity
 import com.cobalto.core.database.project.ProjectItemDao
 import com.cobalto.core.database.project.ProjectItemEntity
 import com.cobalto.core.database.project.ProjectItemResourceDao
@@ -42,9 +44,9 @@ import com.cobalto.core.database.user.*
     PriceHistoryEntity::class, ProfileEntity::class, DbEntity::class,
     DbItemEntity::class, DbItemResourceEntity::class, DecimalFormatEntity::class,
     IncidenceFormatEntity::class, ProjectEntity::class, ProjectModuleEntity::class,
-    ProjectItemEntity::class, ProjectItemResourceEntity::class,
+    ProjectItemEntity::class, ProjectItemResourceEntity::class, ProjectIncidenceFormatEntity::class,
     UserEntity::class, UserRoleEntity::class, UserProfessionEntity::class,
-    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 32)
+    UserPlanEntity::class, SubscriptionHistoryEntity::class], version = 33)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
@@ -64,6 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun projectModuleDao(): ProjectModuleDao
     abstract fun projectItemDao(): ProjectItemDao
     abstract fun projectItemResourceDao(): ProjectItemResourceDao
+    abstract fun projectIncidenceFormatDao(): ProjectIncidenceFormatDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

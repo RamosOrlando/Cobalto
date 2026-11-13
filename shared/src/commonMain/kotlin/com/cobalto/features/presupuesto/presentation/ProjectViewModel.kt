@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cobalto.features.db.domain.model.DbItem
 import com.cobalto.features.db.domain.model.DbSubItem
 import com.cobalto.features.db.domain.repository.DbRepository
+import com.cobalto.features.incidence_format.domain.model.IncidenceFormat
 import com.cobalto.features.presupuesto.domain.model.Project
 import com.cobalto.features.presupuesto.domain.model.ProjectModule
 import com.cobalto.features.presupuesto.domain.repository.ProjectRepository
@@ -13,13 +14,37 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class BudgetViewModel(
+class ProjectViewModel(
     private val projectRepository: ProjectRepository,
     private val dbRepository: DbRepository
 ) : ViewModel() {
+
+    init {
+        refreshDbData()
+    }
+
+    fun refreshDbData() {
+        viewModelScope.launch {
+            runCatching {
+                dbRepository.syncDbs()
+                dbRepository.getDbs().first().forEach { db ->
+                    dbRepository.syncDbItems(db.dbId)
+                }
+            }
+        }
+    }
+
+    fun syncDbItemsForDb(dbId: String) {
+        viewModelScope.launch {
+            runCatching {
+                dbRepository.syncDbItems(dbId)
+            }
+        }
+    }
 
     val projects: StateFlow<List<Project>> = projectRepository.getAllProjects()
         .stateIn(
@@ -38,12 +63,23 @@ class BudgetViewModel(
     private val _showCreateDialog = MutableStateFlow(false)
     val showCreateDialog: StateFlow<Boolean> = _showCreateDialog.asStateFlow()
 
+    private val _showIncidenceDialog = MutableStateFlow(false)
+    val showIncidenceDialog: StateFlow<Boolean> = _showIncidenceDialog.asStateFlow()
+
     fun onShowCreateDialog() {
         _showCreateDialog.value = true
     }
 
     fun onDismissCreateDialog() {
         _showCreateDialog.value = false
+    }
+
+    fun onShowIncidenceDialog() {
+        _showIncidenceDialog.value = true
+    }
+
+    fun onDismissIncidenceDialog() {
+        _showIncidenceDialog.value = false
     }
 
     fun createProject(name: String, description: String?) {
@@ -73,9 +109,9 @@ class BudgetViewModel(
         }
     }
 
-    fun deleteModule(moduleId: String) {
+    fun deleteModule(projectId: String, moduleId: String) {
         viewModelScope.launch {
-            projectRepository.deleteModule(moduleId)
+            projectRepository.deleteModule(projectId, moduleId)
         }
     }
 
@@ -119,9 +155,19 @@ class BudgetViewModel(
         }
     }
 
-    fun deleteItem(itemId: String) {
+    fun deleteItem(projectId: String, itemId: String) {
         viewModelScope.launch {
-            projectRepository.deleteItem(itemId)
+            projectRepository.deleteItem(projectId, itemId)
+        }
+    }
+
+    fun getProjectIncidenceFormats(projectId: String): Flow<List<IncidenceFormat>> {
+        return projectRepository.getProjectIncidenceFormats(projectId)
+    }
+
+    fun saveProjectIncidenceFormats(projectId: String, formats: List<IncidenceFormat>) {
+        viewModelScope.launch {
+            projectRepository.saveProjectIncidenceFormats(projectId, formats)
         }
     }
 }

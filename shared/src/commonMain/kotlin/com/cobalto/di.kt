@@ -22,7 +22,7 @@ import com.cobalto.features.db.domain.repository.DbRepository
 import com.cobalto.features.db.presentation.DbViewModel
 import com.cobalto.features.presupuesto.data.repository.ProjectRepositoryImpl
 import com.cobalto.features.presupuesto.domain.repository.ProjectRepository
-import com.cobalto.features.presupuesto.presentation.BudgetViewModel
+import com.cobalto.features.presupuesto.presentation.ProjectViewModel
 import com.cobalto.features.decimal_format.data.remote.DecimalFormatRemoteDataSource
 import com.cobalto.features.decimal_format.data.remote.SupabaseDecimalFormatDataSource
 import com.cobalto.features.decimal_format.data.repository.DecimalFormatRepositoryImpl
@@ -77,9 +77,12 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import org.koin.core.module.dsl.viewModelOf
 
+import com.cobalto.core.database.ProjectDatabaseManager
+
 val dataModule = module {
     single { SupabaseClient.client }
     single { getRoomDatabase(get()) }
+    single { ProjectDatabaseManager(get()) }
     single { get<AppDatabase>().categoryDao() }
     single { get<AppDatabase>().sectionDao() }
     single { get<AppDatabase>().makerDao() }
@@ -97,6 +100,7 @@ val dataModule = module {
     single { get<AppDatabase>().projectModuleDao() }
     single { get<AppDatabase>().projectItemDao() }
     single { get<AppDatabase>().projectItemResourceDao() }
+    single { get<AppDatabase>().projectIncidenceFormatDao() }
 
     factory<CategoryRemoteDataSource> { SupabaseCategoryDataSource(get()) }
     single<CategoryRepository> { CategoryRepositoryImpl(get(), get()) }
@@ -137,7 +141,7 @@ val dataModule = module {
     factory<UserRemoteDataSource> { SupabaseUserDataSource(get()) }
     single<UserRepository> { UserRepositoryImpl(get(), get()) }
 
-    single<ProjectRepository> { ProjectRepositoryImpl(get(), get(), get(), get(), get()) }
+    single<ProjectRepository> { ProjectRepositoryImpl(get(), get(), get()) }
 
     single<SyncRepository> { SyncRepositoryImpl(get(), get(), get(), get(), get(), get(), get()) }
 
@@ -159,7 +163,7 @@ val domainModule = module {
 val viewModelModule = module {
     viewModelOf(::CategoryViewModel)
     viewModelOf(::DbViewModel)
-    viewModelOf(::BudgetViewModel)
+    viewModelOf(::ProjectViewModel)
     viewModelOf(::SectionViewModel)
     viewModelOf(::MakerViewModel)
     viewModelOf(::ResourceViewModel)

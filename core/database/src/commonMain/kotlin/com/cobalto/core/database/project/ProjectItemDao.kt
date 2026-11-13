@@ -25,8 +25,14 @@ interface ProjectItemDao {
     @Query("DELETE FROM ProjectItem WHERE moduleId = :moduleId")
     suspend fun deleteItemsForModule(moduleId: String)
 
+    @Query("DELETE FROM ProjectItem WHERE moduleId IN (SELECT moduleId FROM ProjectModule WHERE projectId = :projectId)")
+    suspend fun deleteItemsForProject(projectId: String)
+
     @Query("DELETE FROM ProjectItem")
     suspend fun clearAllItems()
+
+    @Query("SELECT COALESCE(SUM(totalAmount), 0.0) FROM ProjectItem WHERE moduleId IN (SELECT moduleId FROM ProjectModule WHERE projectId = :projectId)")
+    fun getTotalAmountForProject(projectId: String): Flow<Double>
 
     @Query("SELECT COALESCE(SUM(totalAmount), 0.0) FROM ProjectItem")
     fun getTotalAmount(): Flow<Double>

@@ -20,17 +20,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cobalto.core.presentation.theme.IndustrialShapes
+import com.cobalto.features.incidence_format.presentation.IncidenceFormatDialog
 import com.cobalto.features.presupuesto.domain.model.Project
 import com.cobalto.features.presupuesto.presentation.components.CreateProjectDialog
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun BudgetScreen(
+fun ProjectScreen(
     modifier: Modifier = Modifier,
-    viewModel: BudgetViewModel = koinViewModel()
+    viewModel: ProjectViewModel = koinViewModel()
 ) {
     val projects by viewModel.projects.collectAsState()
     val showCreateDialog by viewModel.showCreateDialog.collectAsState()
+    val showIncidenceDialog by viewModel.showIncidenceDialog.collectAsState()
     var selectedProject by remember { mutableStateOf<Project?>(null) }
 
     if (showCreateDialog) {
@@ -38,6 +40,22 @@ fun BudgetScreen(
             onDismiss = { viewModel.onDismissCreateDialog() },
             onCreateProject = { name, desc ->
                 viewModel.createProject(name, desc)
+            }
+        )
+    }
+
+    if (showIncidenceDialog) {
+        val activeProject = selectedProject ?: projects.firstOrNull()
+        val activeProjectId = activeProject?.projectId ?: ""
+        val projectIncidences by viewModel.getProjectIncidenceFormats(activeProjectId).collectAsState(initial = emptyList())
+
+        IncidenceFormatDialog(
+            initialFormats = projectIncidences,
+            onDismiss = { viewModel.onDismissIncidenceDialog() },
+            onSave = { updatedList ->
+                if (activeProjectId.isNotEmpty()) {
+                    viewModel.saveProjectIncidenceFormats(activeProjectId, updatedList)
+                }
             }
         )
     }
@@ -55,93 +73,93 @@ fun BudgetScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-        if (projects.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+            if (projects.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                        contentDescription = "Presupuesto",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Sin Proyectos Guardados",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Crea tu primer proyecto de presupuesto para generar su archivo .db local.",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { viewModel.onShowCreateDialog() },
-                        shape = IndustrialShapes.medium,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                            contentDescription = "Presupuesto",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(64.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Crear Proyecto Nuevo")
-                    }
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Proyectos (${projects.size})",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            text = "Sin Proyectos Guardados",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 22.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Crea tu primer proyecto de presupuesto para generar su archivo .db local.",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
                         Button(
                             onClick = { viewModel.onShowCreateDialog() },
-                            shape = IndustrialShapes.small,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            shape = IndustrialShapes.medium,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Nuevo", fontSize = 12.sp)
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Crear Proyecto Nuevo")
                         }
                     }
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Proyectos (${projects.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Button(
+                                onClick = { viewModel.onShowCreateDialog() },
+                                shape = IndustrialShapes.small,
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Nuevo", fontSize = 12.sp)
+                            }
+                        }
+                    }
 
-                items(projects, key = { it.projectId }) { project ->
-                    ProjectCard(
-                        project = project,
-                        onClick = { selectedProject = project },
-                        onDelete = { viewModel.deleteProject(project.projectId) }
-                    )
+                    items(projects, key = { it.projectId }) { project ->
+                        ProjectCard(
+                            project = project,
+                            onClick = { selectedProject = project },
+                            onDelete = { viewModel.deleteProject(project.projectId) }
+                        )
+                    }
                 }
             }
         }
     }
-}
 }
 
 @Composable
